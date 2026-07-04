@@ -10,7 +10,12 @@ import {
 export async function GET(req, { params }) {
   await connectDB();
 
-  const product = await getProductById(params.id);
+  const { id } = await params; // <-- await params before destructuring
+  const product = await getProductById(id);
+
+  if (!product) {
+    return NextResponse.json({ message: "Product not found" }, { status: 404 });
+  }
 
   return NextResponse.json(product);
 }
@@ -29,7 +34,7 @@ export async function GET(req, { params }) {
 export async function PUT(req, { params }) {
   await connectDB();
 
-  const { id } = await params; // 👈 FIX
+  const { id } = await params; 
 
   const body = await req.json();
 
