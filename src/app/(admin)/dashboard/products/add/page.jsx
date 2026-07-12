@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import {useDispatch} from "react-redux";
 import dynamic from "next/dynamic";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import ImageDropzone from "@/components/ui/ImageDropzone";
@@ -10,6 +11,9 @@ import Select from "@/components/ui/Select";
 import Checkbox from "@/components/ui/Checkbox";
 import LabelToggle from "@/components/ui/LabelToggle";
 
+import { uploadImages } from "@/store/slices/uploadSlice";
+import { createProduct } from "@/store/slices/productSlice";
+
 const Editor = dynamic(() => import("@/components/ui/Editor"), {
   ssr: false,
   loading: () => (
@@ -18,6 +22,8 @@ const Editor = dynamic(() => import("@/components/ui/Editor"), {
 });
 
 export default function AddProductPage() {
+
+  const dispatch = useDispatch();
   const [publish, setPublish] = useState(true);
 
   const [form, setForm] = useState({
@@ -54,9 +60,44 @@ export default function AddProductPage() {
     tax: "",
   });
 
-  const handleCreateProduct = () => {
-    console.log({ ...form, publish });
-  };
+  // const handleCreateProduct = () => {
+  //   console.log({ ...form, publish });
+  // };
+
+  const handleCreateProduct = async () => {
+  try {
+    let imageUrls = [];
+    if (form.images.length > 0) {
+      imageUrls = await dispatch(uploadImages(form.images)).unwrap();
+    }
+
+    const payload = {
+      name: form.name,
+      subDescription: form.subDescription,
+      description: form.content,
+      images: imageUrls,
+      productCode: form.productCode,
+      productSKU: form.productSKU,
+      quantity: Number(form.quantity) || 0,
+      category: form.category,
+      colors: form.colors ? [form.colors] : [],
+      sizes: form.sizes ? [form.sizes] : [],
+      tags: form.tags,
+      gender: form.gender,
+      saleLabel: form.saleLabel,
+      newLabel: form.newLabel,
+      regularPrice: Number(form.regularPrice) || 0,
+      salePrice: Number(form.salePrice) || 0,
+      priceIncludesTaxes: form.priceIncludesTaxes,
+      tax: Number(form.tax) || 0,
+      publish,
+    };
+
+    await dispatch(createProduct(payload)).unwrap();
+  } catch (err) {
+    console.error("Failed to create product:", err);
+  }
+};
 
   return (
     <div className="mx-auto max-w-4xl">

@@ -1,15 +1,17 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { MoreVertical, ChevronDown, ChevronRight } from "lucide-react";
 
 const overviewItems = [
-  { label: "App", icon: "home" },
-  { label: "Ecommerce", icon: "bag", active: true },
-  { label: "Analytics", icon: "chart" },
-  { label: "Banking", icon: "bank" },
-  { label: "Booking", icon: "plane" },
-  { label: "File", icon: "file" },
-  { label: "Course", icon: "book" },
+  { label: "App", icon: "home", href: "/dashboard" },
+  { label: "Ecommerce", icon: "bag", href: "/dashboard/ecommerce" },
+  { label: "Analytics", icon: "chart", href: "/dashboard/analytics" },
+  { label: "Banking", icon: "bank", href: "/dashboard/banking" },
+  { label: "Booking", icon: "plane", href: "/dashboard/booking" },
+  { label: "File", icon: "file", href: "/dashboard/file" },
+  { label: "Course", icon: "book", href: "/dashboard/course" },
 ];
 
 const managementItems = [
@@ -17,36 +19,44 @@ const managementItems = [
     label: "User",
     icon: "user",
     children: [
-      { label: "List User" },
-      { label: "Create User" },
-      { label: "Roles & Permissions" },
+      { label: "List User", href: "/dashboard/users" },
+      { label: "Create User", href: "/dashboard/users/add" },
+      { label: "Roles & Permissions", href: "/dashboard/users/roles" },
     ],
   },
   {
     label: "Product",
     icon: "box",
     children: [
-      { label: "List Product" },
-      { label: "Add Product" },
-      { label: "Categories" },
+      { label: "List Product", href: "/dashboard/products/list" },
+      { label: "Add Product", href: "/dashboard/products/add" },
+      { label: "Categories", href: "/dashboard/products/categories" },
     ],
   },
   {
     label: "Order",
     icon: "cart",
     children: [
-      { label: "All Orders" },
-      { label: "Pending" },
-      { label: "Completed" },
+      { label: "All Orders", href: "/dashboard/orders" },
+      { label: "Pending", href: "/dashboard/orders/pending" },
+      { label: "Completed", href: "/dashboard/orders/completed" },
     ],
   },
-  { label: "Invoice", icon: "receipt" },
-  { label: "Blog", icon: "chat" },
-  { label: "Job", icon: "briefcase" },
-  { label: "Tour", icon: "compass" },
-  { label: "File manager", icon: "folder" },
-  { label: "Mail", icon: "mail", badge: "+32" },
-  { label: "Chat", icon: "message" },
+  {
+    label: "Invoice",
+    icon: "receipt",
+    children: [
+      { label: "All Orders", href: "/dashboard/orders" },
+      { label: "Pending", href: "/dashboard/orders/pending" },
+      { label: "Completed", href: "/dashboard/orders/completed" },
+    ],
+  },
+  { label: "Blog", icon: "chat", href: "/dashboard/blog" },
+  { label: "Job", icon: "briefcase", href: "/dashboard/jobs" },
+  { label: "Tour", icon: "compass", href: "/dashboard/tours" },
+  { label: "File manager", icon: "folder", href: "/dashboard/files" },
+  { label: "Mail", icon: "mail", href: "/dashboard/mail", badge: "+32" },
+  { label: "Chat", icon: "message", href: "/dashboard/#" },
 ];
 
 function SidebarIcon({ type, className = "h-4 w-4" }) {
@@ -193,157 +203,88 @@ function SidebarIcon({ type, className = "h-4 w-4" }) {
   }
 }
 
-// function NavItem({ item }) {
-//   const [open, setOpen] = useState(false);
-//   const hasChildren = item.children && item.children.length > 0;
-
-//   return (
-//     <div>
-      
-//       <div
-//         onClick={() => hasChildren && setOpen(!open)}
-//         className={`group flex cursor-pointer items-center justify-between rounded-2xl px-3 py-2.5 text-sm transition ${
-//           item.active
-//             ? "bg-emerald-50 text-emerald-700"
-//             : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-//         }`}
-//       >
-//         <div className="flex items-center gap-3">
-//           <span
-//             className={`flex h-8 w-8 items-center justify-center rounded-xl ${
-//               item.active
-//                 ? "bg-emerald-500 text-white"
-//                 : "bg-slate-100 text-slate-400 group-hover:bg-white"
-//             }`}
-//           >
-//             <SidebarIcon type={item.icon} />
-//           </span>
-//           <span className="font-medium">{item.label}</span>
-//         </div>
-
-//         {hasChildren ? (
-//           <span className="text-slate-400">{open ? "⌄" : ">"}</span>
-//         ) : item.badge ? (
-//           <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-semibold text-orange-600">
-//             {item.badge}
-//           </span>
-//         ) : (
-//           <span className="text-slate-300">{!item.active && ">"}</span>
-//         )}
-//       </div>
-
-      
-//       {hasChildren && open && (
-//         <div className="ml-11 mt-1 space-y-1">
-//           {item.children.map((sub) => (
-//             <div
-//               key={sub.label}
-//               className="rounded-xl px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-//             >
-//               {sub.label}
-//             </div>
-//           ))}
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
-// function NavItem({ item }) {
-//   const [open, setOpen] = useState(false);
-//   const router = useRouter();
-
-//   const handleClick = (label) => {
-//     if (label === "Add Product") {
-//       router.push("/dashboard/products/add");
-//     }
-//   };
-
-//   return (
-//     <div>
-//       <div
-//         onClick={() => item.children && setOpen(!open)}
-//         className="..."
-//       >
-//         {/* SAME */}
-//       </div>
-
-//       {item.children && open && (
-//         <div className="ml-11 mt-1 space-y-1">
-//           {item.children.map((sub) => (
-//             <div
-//               key={sub.label}
-//               onClick={() => handleClick(sub.label)}
-//               className="cursor-pointer rounded-xl px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-//             >
-//               {sub.label}
-//             </div>
-//           ))}
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
-function NavItem({ item }) {
-  const [open, setOpen] = useState(false);
-  const router = useRouter();
-
-  const hasChildren = item.children && item.children.length > 0;
-
-  const handleClick = (label) => {
-    if (label === "Add Product") {
-      router.push("/dashboard/products/add");
-    }
-  };
+function NavItem({ item, pathname }) {
+  const hasChildren = item.children?.length > 0;
+  const isActive = item.href
+    ? pathname === item.href
+    : item.children?.some(
+        (child) =>
+          pathname === child.href || pathname.startsWith(child.href + "/"),
+      );
+  const [open, setOpen] = useState(isActive && hasChildren);
 
   return (
     <div>
-      {/* MAIN ITEM */}
-      <div
-        onClick={() => hasChildren && setOpen(!open)}
-        className={`group flex cursor-pointer items-center justify-between rounded-2xl px-3 py-2.5 text-sm transition ${
-          item.active
-            ? "bg-emerald-50 text-emerald-700"
-            : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <span
-            className={`flex h-8 w-8 items-center justify-center rounded-xl ${
-              item.active
-                ? "bg-emerald-500 text-white"
-                : "bg-slate-100 text-slate-400 group-hover:bg-white"
-            }`}
-          >
-            <SidebarIcon type={item.icon} />
+      {hasChildren ? (
+        <div
+          onClick={() => setOpen(!open)}
+          className={`group flex cursor-pointer items-center justify-between rounded-2xl px-3 py-2.5 text-sm transition ${
+            isActive
+              ? "bg-emerald-50 text-emerald-700"
+              : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-xl ${
+                isActive
+                  ? "bg-emerald-500 text-white"
+                  : "bg-slate-100 text-slate-400 group-hover:bg-white"
+              }`}
+            >
+              <SidebarIcon type={item.icon} />
+            </span>
+            <span className="font-medium">{item.label}</span>
+          </div>
+          <span className="text-slate-400 ">
+            {open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
           </span>
-
-          <span className="font-medium">{item.label}</span>
         </div>
+      ) : (
+        <Link
+          href={item.href}
+          className={`group flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm transition ${
+            isActive
+              ? "bg-emerald-50 text-emerald-700"
+              : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-xl ${
+                isActive
+                  ? "bg-emerald-500 text-white"
+                  : "bg-slate-100 text-slate-400 group-hover:bg-white"
+              }`}
+            >
+              <SidebarIcon type={item.icon} />
+            </span>
+            <span className="font-medium">{item.label}</span>
+          </div>
+          {item.badge ? (
+            <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-semibold text-orange-600">
+              {item.badge}
+            </span>
+          ) : (
+            <span className="text-slate-300">{!isActive && ""}</span>
+          )}
+        </Link>
+      )}
 
-        {hasChildren ? (
-          <span className="text-slate-400">{open ? "⌄" : ">"}</span>
-        ) : item.badge ? (
-          <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-semibold text-orange-600">
-            {item.badge}
-          </span>
-        ) : (
-          <span className="text-slate-300">{!item.active && ">"}</span>
-        )}
-      </div>
-
-      {/* SUB MENU */}
       {hasChildren && open && (
         <div className="ml-11 mt-1 space-y-1">
           {item.children.map((sub) => (
-            <div
-              key={sub.label}
-              onClick={() => handleClick(sub.label)}
-              className="cursor-pointer rounded-xl px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            <Link
+              key={sub.href}
+              href={sub.href}
+              className={`block rounded-xl px-3 py-2 text-sm transition ${
+                pathname === sub.href
+                  ? "bg-emerald-50 text-emerald-700 font-medium"
+                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              }`}
             >
               {sub.label}
-            </div>
+            </Link>
           ))}
         </div>
       )}
@@ -352,12 +293,12 @@ function NavItem({ item }) {
 }
 
 export default function DashboardLayout({ children }) {
+  const pathname = usePathname();
+
   return (
     <main className="h-screen overflow-hidden bg-[#f5f8fb] text-slate-900">
       <div className="flex w-full">
-        {/* SIDEBAR */}
         <aside className="hidden w-[250px] shrink-0 border-r border-slate-200 bg-white px-5 py-6 xl:block h-screen overflow-y-auto sticky top-0">
-          {/* <aside className="sidebar-scroll hidden w-[250px] shrink-0 border-r border-slate-200 bg-white px-5 py-6 xl:block h-screen sticky top-0"> */}
           <div className="flex items-center gap-2 px-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500 text-lg font-black text-white">
               M
@@ -370,7 +311,7 @@ export default function DashboardLayout({ children }) {
             </p>
             <div className="mt-3 space-y-1">
               {overviewItems.map((item) => (
-                <NavItem key={item.label} item={item} />
+                <NavItem key={item.label} item={item} pathname={pathname} />
               ))}
             </div>
           </div>
@@ -381,16 +322,13 @@ export default function DashboardLayout({ children }) {
             </p>
             <div className="mt-3 space-y-1">
               {managementItems.map((item) => (
-                <NavItem key={item.label} item={item} />
+                <NavItem key={item.label} item={item} pathname={pathname} />
               ))}
             </div>
           </div>
         </aside>
 
-        {/* MAIN CONTENT */}
-        {/* <div className="min-w-0 flex-1 bg-transparent h-screen overflow-y-auto"> */}
         <div className="min-w-0 flex-1 bg-transparent h-screen overflow-y-auto">
-          {/* HEADER (SAME) */}
           <div className="sticky top-0 z-50 backdrop-blur-xl bg-white/60 border-b border-white/30 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.25)] sm:px-5 lg:px-7">
             <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 py-3 min-h-[72px]">
               <div className="flex items-center gap-3">
@@ -464,8 +402,7 @@ export default function DashboardLayout({ children }) {
             </header>
           </div>
 
-          {/* 🔥 THIS IS WHERE PAGE WILL CHANGE */}
-          <div className="p-4 ">{children}</div>
+          <div className="p-4">{children}</div>
         </div>
       </div>
     </main>
