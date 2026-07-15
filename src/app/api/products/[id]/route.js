@@ -8,46 +8,77 @@ import {
 
 // GET single product
 export async function GET(req, { params }) {
-  await connectDB();
+  try {
+    await connectDB();
 
-  const { id } = await params; // <-- await params before destructuring
-  const product = await getProductById(id);
+    const { id } = await params;
+    const product = await getProductById(id);
 
-  if (!product) {
-    return NextResponse.json({ message: "Product not found" }, { status: 404 });
+    if (!product) {
+      return NextResponse.json(
+        { message: "Product not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(product);
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    return NextResponse.json(
+      { message: "Failed to fetch product" },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json(product);
 }
 
-// UPDATE product
-// export async function PUT(req, { params }) {
-//   await connectDB();
-
-//   const body = await req.json();
-
-//   const updated = await updateProduct(params.id, body);
-
-//   return NextResponse.json(updated);
-// }
-
+// PUT update product
 export async function PUT(req, { params }) {
-  await connectDB();
+  try {
+    await connectDB();
 
-  const { id } = await params; 
+    const { id } = await params;
+    const body = await req.json();
 
-  const body = await req.json();
+    const product = await updateProduct(id, body);
 
-  const updated = await updateProduct(id, body);
+    if (!product) {
+      return NextResponse.json(
+        { message: "Product not found" },
+        { status: 404 }
+      );
+    }
 
-  return NextResponse.json(updated);
+    return NextResponse.json(product);
+  } catch (error) {
+    console.error("Error updating product:", error);
+    return NextResponse.json(
+      { message: "Failed to update product" },
+      { status: 500 }
+    );
+  }
 }
 
 // DELETE product
 export async function DELETE(req, { params }) {
-  await connectDB();
-  const {id} = await params ;
-  await deleteProduct(id);
+  try {
+    await connectDB();
 
-  return NextResponse.json({ message: "Deleted successfully" });
+    const { id } = await params;
+    const product = await deleteProduct(id);
+
+    if (!product) {
+      return NextResponse.json(
+        { message: "Product not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ message: "Product deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    return NextResponse.json(
+      { message: "Failed to delete product" },
+      { status: 500 }
+    );
+  }
 }

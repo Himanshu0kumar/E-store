@@ -11,6 +11,23 @@ export default function ImageDropzone({ files, onFilesChange }) {
     onFilesChange([...(files || []), ...newFiles]);
   };
 
+  const getImageSource = (file) => {
+    // If it's already a URL (string), return it directly
+    if (typeof file === "string") {
+      return file;
+    }
+    // If it's a File object, create an object URL
+    if (file instanceof File) {
+      return URL.createObjectURL(file);
+    }
+    return null;
+  };
+
+  const removeFile = (index) => {
+    const updatedFiles = files.filter((_, i) => i !== index);
+    onFilesChange(updatedFiles);
+  };
+
   return (
     <div>
       <p className="mb-2 text-sm font-medium text-slate-700">Images</p>
@@ -52,18 +69,31 @@ export default function ImageDropzone({ files, onFilesChange }) {
       {/* PREVIEW LIST */}
       {files?.length > 0 && (
         <div className="mt-4 grid grid-cols-4 gap-3">
-          {files.map((file, i) => (
-            <div
-              key={i}
-              className="relative aspect-square overflow-hidden rounded-lg border border-slate-200"
-            >
-              <img
-                src={URL.createObjectURL(file)}
-                alt={file.name}
-                className="h-full w-full object-cover"
-              />
-            </div>
-          ))}
+          {files.map((file, i) => {
+            const src = getImageSource(file);
+            return (
+              <div
+                key={i}
+                className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200"
+              >
+                <img
+                  src={src}
+                  alt={typeof file === "string" ? "Product image" : file.name}
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeFile(i);
+                  }}
+                  className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition group-hover:opacity-100"
+                >
+                  <span className="text-white text-lg font-bold">✕</span>
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

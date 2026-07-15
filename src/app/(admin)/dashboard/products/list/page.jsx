@@ -3,19 +3,22 @@
 import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
-import { fetchProducts } from "@/store/slices/productSlice";
+import { fetchProducts, deleteProduct } from "@/store/slices/productSlice";
+import DeleteConfirmDialog from "@/components/ui/DeleteConfirmDialog";
 import {
   Search,
   MoreVertical,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Eye, Pencil, Trash2
+  Eye,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 export default function ProductsListPage() {
   const dispatch = useDispatch();
-  const { items: allProducts, loading } = useSelector(
+  const { items: allProducts, loading, deleteStatus } = useSelector(
     (state) => state.products,
   );
 
@@ -24,6 +27,8 @@ export default function ProductsListPage() {
   const [stockFilter, setStockFilter] = useState("all"); // "all", "in-stock", "low-stock", "out-of-stock"
   const [publishFilter, setPublishFilter] = useState("all"); // "all", "published", "draft"
   const [currentPage, setCurrentPage] = useState(1);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const itemsPerPage = 10;
 
   // Fetch products on mount
@@ -70,7 +75,20 @@ export default function ProductsListPage() {
     startIndex + itemsPerPage,
   );
 
-  const ActionMenu = ({ productId }) => {
+  const handleDeleteClick = (product) => {
+    setSelectedProduct(product);
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedProduct) {
+      await dispatch(deleteProduct(selectedProduct._id));
+      setShowDeleteDialog(false);
+      setSelectedProduct(null);
+    }
+  };
+
+  const ActionMenu = ({ product }) => {
     const [open, setOpen] = useState(false);
     const menuRef = useRef(null);
 
@@ -100,7 +118,8 @@ export default function ProductsListPage() {
         {open && (
           <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
             <Link
-              href={`/dashboard/products/${productId}`}
+              href={`/dashboard/products/${product._id}`}
+              onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50"
             >
               <Eye className="h-4 w-4" />
@@ -108,7 +127,8 @@ export default function ProductsListPage() {
             </Link>
 
             <Link
-              href={`/dashboard/products/edit/${productId}`}
+              href={`/dashboard/products/${product._id}/edit`}
+              onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50"
             >
               <Pencil className="h-4 w-4" />
@@ -118,11 +138,10 @@ export default function ProductsListPage() {
             <button
               onClick={() => {
                 setOpen(false);
-
-                // Delete API
-                console.log(productId);
+                handleDeleteClick(product);
               }}
-              className="flex w-full items-center gap-3 px-4 py-3 text-sm text-red-600 transition hover:bg-red-50"
+              disabled={deleteStatus === "loading"}
+              className="flex w-full items-center gap-3 px-4 py-3 text-sm text-red-600 transition hover:bg-red-50 disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" />
               Delete
@@ -281,130 +300,125 @@ export default function ProductsListPage() {
         {/* TABLE */}
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <div className="max-h-[650px] overflow-y-auto">
-          <table className="w-full">
-            <thead className="sticky top-0 z-10 bg-slate-50">
-              <tr className="border-b border-slate-100 bg-slate-50">
-                <th className="px-6 py-4 text-left">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded border border-slate-300 accent-emerald-500"
-                  />
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-600">
-                  Product
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-600">
-                  Create at
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-600">
-                  Stock
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-600">
-                  Price
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-slate-600">
-                  Publish
-                </th>
-                <th className="px-6 py-4 text-center text-xs font-medium text-slate-600">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center">
-                    <p className="text-sm text-slate-400">
-                      Loading products...
-                    </p>
-                  </td>
+            <table className="w-full">
+              <thead className="sticky top-0 z-10 bg-slate-50">
+                <tr className="border-b border-slate-100 bg-slate-50">
+                  <th className="px-6 py-4 text-left">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border border-slate-300 accent-emerald-500"
+                    />
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-600">
+                    Product
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-600">
+                    Create at
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-600">
+                    Stock
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-600">
+                    Price
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-slate-600">
+                    Publish
+                  </th>
+                  <th className="px-6 py-4 text-center text-xs font-medium text-slate-600">
+                    Action
+                  </th>
                 </tr>
-              ) : paginatedProducts.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center">
-                    <p className="text-sm text-slate-400">No products found</p>
-                  </td>
-                </tr>
-              ) : (
-                paginatedProducts.map((product) => (
-                  <tr
-                    key={product._id}
-                    className="border-b border-slate-100 transition hover:bg-slate-50"
-                  >
-                    <td className="px-6 py-4">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border border-slate-300 accent-emerald-500"
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        {product.images && product.images[0] ? (
-                          <img
-                            src={product.images[0]}
-                            alt={product.name}
-                            className="h-10 w-10 rounded-lg object-cover"
-                          />
-                        ) : (
-                          <div className="h-10 w-10 rounded-lg bg-slate-200" />
-                        )}
-                        <div>
-                          <p className="text-sm font-medium text-slate-900">
-                            {product.name}
-                          </p>
-                          <p className="text-xs text-slate-400">
-                            {product.category}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-slate-600">
-                        <p>
-                          {new Date(product.createdAt).toLocaleDateString(
-                            "en-US",
-                            {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            },
-                          )}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          {new Date(product.createdAt).toLocaleTimeString(
-                            "en-US",
-                            { hour: "2-digit", minute: "2-digit" },
-                          )}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStockBadge(product.quantity)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-semibold text-slate-900">
-                        ${Number(product.regularPrice).toFixed(2)}
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-12 text-center">
+                      <p className="text-sm text-slate-400">
+                        Loading products...
                       </p>
                     </td>
-                    <td className="px-6 py-4">
-                      {getPublishBadge(product.publish)}
-                    </td>
-                    {/* <td className="px-6 py-4 text-center">
-
-                      <button className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
-                        
-                        <ActionMenu productId={product._id} />
-                      </button>
-                    </td> */}
-
-                    <td className="px-6 py-4 text-right">
-                      <ActionMenu productId={product._id} />
+                  </tr>
+                ) : paginatedProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-12 text-center">
+                      <p className="text-sm text-slate-400">
+                        No products found
+                      </p>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  paginatedProducts.map((product) => (
+                    <tr
+                      key={product._id}
+                      className="border-b border-slate-100 transition hover:bg-slate-50"
+                    >
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border border-slate-300 accent-emerald-500"
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {product.images && product.images[0] ? (
+                            <img
+                              src={product.images[0]}
+                              alt={product.name}
+                              className="h-10 w-10 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-lg bg-slate-200" />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">
+                              {product.name}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              {product.category}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-slate-600">
+                          <p>
+                            {new Date(product.createdAt).toLocaleDateString(
+                              "en-US",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            {new Date(product.createdAt).toLocaleTimeString(
+                              "en-US",
+                              { hour: "2-digit", minute: "2-digit" },
+                            )}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {getStockBadge(product.quantity)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-semibold text-slate-900">
+                          ${Number(product.regularPrice).toFixed(2)}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4">
+                        {getPublishBadge(product.publish)}
+                      </td>
+
+                      <td className="px-6 py-4 text-right">
+                        <ActionMenu product={product} />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -446,6 +460,19 @@ export default function ProductsListPage() {
           </div>
         )}
       </div>
+
+      {/* DELETE CONFIRMATION DIALOG */}
+      <DeleteConfirmDialog
+        isOpen={showDeleteDialog}
+        title="Delete product?"
+        description={`Are you sure you want to delete "${selectedProduct?.name}"? This action cannot be undone.`}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setShowDeleteDialog(false);
+          setSelectedProduct(null);
+        }}
+        isLoading={deleteStatus === "loading"}
+      />
     </div>
   );
 }

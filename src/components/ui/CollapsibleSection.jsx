@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown } from 'lucide-react';
 
 export default function CollapsibleSection({ title, description, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -23,7 +24,7 @@ export default function CollapsibleSection({ title, description, defaultOpen = f
             open ? "rotate-180" : ""
           }`}
         >
-          ⌄
+          < ChevronDown size={18}/>
         </span>
       </button>
 
