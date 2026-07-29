@@ -1,27 +1,23 @@
 import { connectDB } from "@/lib/db";
-import { loginUser } from "@/services/auth.service";
+import { refreshAccessToken } from "@/services/auth.service";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
     await connectDB();
-    const data = await req.json();
 
-    if (!data.email || !data.password) {
+    const refreshToken = req.cookies.get("refreshToken")?.value;
+    if (!refreshToken) {
       return NextResponse.json(
-        { success: false, error: "Email and password are required" },
-        { status: 400 }
+        { success: false, error: "No refresh token" },
+        { status: 401 }
       );
     }
 
-    const result = await loginUser(data);
+    const result = await refreshAccessToken(refreshToken);
 
     const response = NextResponse.json(
-      {
-        success: true,
-        data: { user: result.user },
-        message: "Login successful",
-      },
+      { success: true, message: "Token refreshed" },
       { status: 200 }
     );
 
@@ -33,9 +29,6 @@ export async function POST(req) {
       path: "/",
     });
 
-    // Scoped to the refresh route only — the browser won't send it
-    // on every other request, shrinking the blast radius if a
-    // request/response is ever logged or proxied somewhere.
     response.cookies.set("refreshToken", result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -46,10 +39,13 @@ export async function POST(req) {
 
     return response;
   } catch (error) {
-    console.error("Login error:", error);
-    return NextResponse.json(
-      { success: false, error: error.message },
+    const response = NextResponse.json(
+      { success: false, error: "Session expired" },
       { status: 401 }
     );
+    // Clear dead cookies so the browser stops sending them.
+    response.cookies.delete("accessToken", { path: "/" });
+    response.cookies.delete("refreshToken", { path: "/api/auth/refresh" });
+    return response;
   }
 }

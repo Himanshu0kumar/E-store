@@ -1,34 +1,43 @@
 import { connectDB } from "@/lib/db";
 import { registerUser } from "@/services/auth.service";
-import { signToken } from "@/lib/jwt";
-import { serialize } from "cookie";
+import { NextResponse } from "next/server";
 
 export async function POST(req) {
   try {
     await connectDB();
+    const data = await req.json();
+    const result = await registerUser(data);
 
-    const body = await req.json();
-    const user = await registerUser(body);
+    const response = NextResponse.json(
+      {
+        success: true,
+        data: { user: result.user },
+        message: "Registration successful",
+      },
+      { status: 201 }
+    );
 
-    const token = signToken({ id: user._id, role: user.role });
-
-    const cookie = serialize("token", token, {
+    response.cookies.set("accessToken", result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60,
       path: "/",
-      maxAge: 60 * 60 * 24 * 7,
     });
 
-    return new Response(
-      JSON.stringify({ message: "User registered" }),
-      {
-        status: 201,
-        headers: { "Set-Cookie": cookie },
-      }
-    );
+    response.cookies.set("refreshToken", result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 30 * 24 * 60 * 60,
+      path: "/api/auth/refresh",
+    });
+
+    return response;
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
+    console.error("Register error:", error);
+    return NextResponse.json(
+      { success: false, error: error.message },
       { status: 400 }
     );
   }
