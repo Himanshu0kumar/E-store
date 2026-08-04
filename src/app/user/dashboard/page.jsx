@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   User,
   ShoppingBag,
@@ -518,13 +519,13 @@ export default function DashboardPage() {
                   <p className="text-slate-500 mb-6 text-sm">
                     Start shopping to see your orders here
                   </p>
-                  <a
-                    href="/products"
+                  <Link
+                    href="/product"
                     className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                   >
                     <ShoppingBag className="w-4 h-4" />
                     Browse Products
-                  </a>
+                  </Link>
                 </div>
               </div>
             )}
@@ -544,13 +545,13 @@ export default function DashboardPage() {
                       <p className="text-slate-500 mb-6 text-sm">
                         Add your favorite items to your wishlist
                       </p>
-                      <a
-                        href="/products"
+                      <Link
+                        href="/product"
                         className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                       >
                         <Heart className="w-4 h-4" />
                         Explore Products
-                      </a>
+                      </Link>
                     </div>
                   </div>
                 ) : (

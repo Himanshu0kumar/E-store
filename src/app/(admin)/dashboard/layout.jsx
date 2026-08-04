@@ -33,6 +33,7 @@ const managementItems = [
     ],
   },
   { label: "Category", icon: "chat", href: "/dashboard/categories" },
+  { label: "Brand", icon: "chat", href: "/dashboard/brands" },
   {
     label: "Order",
     icon: "cart",
