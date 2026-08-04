@@ -13,11 +13,21 @@ import RefreshToken from "@/models/RefreshToken";
 // Every refresh token gets a unique `jti`. That id (not the userId)
 // is what we use to look up the stored token later, so multiple
 // concurrent sessions per user never collide.
-const generateTokens = (userId) => {
+//
+// `role` is embedded in the ACCESS token only, not the refresh
+// token. That's deliberate: the access token is short-lived (15m),
+// so a stale role claim in it is a small, bounded window. The
+// refresh token lives for 30 days — if we put role there too, a
+// user demoted from admin to a regular role could keep minting
+// fresh "admin" access tokens for a month using their old refresh
+// token. Instead, every refresh re-reads the CURRENT role from the
+// database (see refreshAccessToken below) before issuing a new
+// access token.
+const generateTokens = (userId, role) => {
   const jti = crypto.randomUUID();
 
   const accessToken = jwt.sign(
-    { userId, type: "access" },
+    { userId, role, type: "access" },
     process.env.JWT_SECRET,
     { expiresIn: "15m" }
   );
@@ -70,16 +80,22 @@ export const registerUser = async (data) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
+  // New accounts always start as "user" — nobody signs themselves
+  // up as admin through the public register endpoint. Promoting to
+  // admin is a separate, deliberate action (e.g. done directly in
+  // the database or through a superadmin-only endpoint), never a
+  // side effect of self-registration.
   const user = await User.create({
     name,
     email: email.toLowerCase(),
     password: hashedPassword,
+    role: "user",
   });
 
   await Cart.create({ userId: user._id });
   await Wishlist.create({ userId: user._id });
 
-  const { accessToken, refreshToken, jti } = generateTokens(user._id);
+  const { accessToken, refreshToken, jti } = generateTokens(user._id, user.role);
   await storeRefreshToken(user._id, jti, refreshToken);
 
   return {
@@ -117,7 +133,7 @@ export const loginUser = async (data) => {
   user.lastLogin = new Date();
   await user.save();
 
-  const { accessToken, refreshToken, jti } = generateTokens(user._id);
+  const { accessToken, refreshToken, jti } = generateTokens(user._id, user.role);
   await storeRefreshToken(user._id, jti, refreshToken);
 
   return {
@@ -188,6 +204,17 @@ export const refreshAccessToken = async (refreshToken) => {
     throw new Error("Unable to refresh token");
   }
 
+  // Re-read the user's CURRENT role from the database rather than
+  // trusting anything from the old token. This is what makes role
+  // changes (promote/demote) take effect within one refresh cycle
+  // (at most 15 minutes) instead of persisting for the life of the
+  // refresh token.
+  const user = await User.findById(decoded.userId).select("role");
+  if (!user) {
+    await RefreshToken.deleteOne({ _id: storedToken._id });
+    throw new Error("Unable to refresh token");
+  }
+
   // Rotate: delete the used token, issue a brand new pair + jti.
   await RefreshToken.deleteOne({ _id: storedToken._id });
 
@@ -195,7 +222,7 @@ export const refreshAccessToken = async (refreshToken) => {
     accessToken,
     refreshToken: newRefreshToken,
     jti: newJti,
-  } = generateTokens(decoded.userId);
+  } = generateTokens(decoded.userId, user.role);
   await storeRefreshToken(decoded.userId, newJti, newRefreshToken);
 
   return { accessToken, refreshToken: newRefreshToken };

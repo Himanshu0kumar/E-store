@@ -30,9 +30,9 @@ const managementItems = [
     children: [
       { label: "List Product", href: "/dashboard/products/list" },
       { label: "Add Product", href: "/dashboard/products/add" },
-      { label: "Categories", href: "/dashboard/products/categories" },
     ],
   },
+  { label: "Category", icon: "chat", href: "/dashboard/categories" },
   {
     label: "Order",
     icon: "cart",

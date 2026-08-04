@@ -4,6 +4,7 @@ import authReducer from "./slices/authSlice";
 import uploadReducer from "./slices/uploadSlice";
 import wishlistReducer from "./slices/wishlistSlice";
 import cartReducer from "./slices/cartSlice";
+import categoryReducer from "./slices/categorySlice";
 export const store = configureStore({
   reducer: {
     products: productReducer,
@@ -11,5 +12,6 @@ export const store = configureStore({
     upload: uploadReducer, 
     wishlist: wishlistReducer ,
     cart: cartReducer ,
+    category: categoryReducer ,
   },
 });
