@@ -1,5 +1,7 @@
 "use client";
 
+import { ChevronDown } from 'lucide-react';
+
 export default function Select({ label, value, onChange, options, placeholder }) {
   return (
     <div>
@@ -18,7 +20,7 @@ export default function Select({ label, value, onChange, options, placeholder })
           ))}
         </select>
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
-          ⌄
+          <ChevronDown />
         </span>
       </div>
     </div>

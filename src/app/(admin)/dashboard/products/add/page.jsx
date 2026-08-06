@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import {useDispatch} from "react-redux";
+import { useState, useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import dynamic from "next/dynamic";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import ImageDropzone from "@/components/ui/ImageDropzone";
@@ -10,9 +10,12 @@ import Toggle from "@/components/ui/Toggle";
 import Select from "@/components/ui/Select";
 import Checkbox from "@/components/ui/Checkbox";
 import LabelToggle from "@/components/ui/LabelToggle";
+import AttributeVariantManager from "@/components/ui/AttributeVariantManager";
 
 import { uploadImages } from "@/store/slices/uploadSlice";
 import { createProduct } from "@/store/slices/productSlice";
+import { getCategories } from "@/store/slices/categorySlice";
+import { getBrands } from "@/store/slices/brandSlice";
 
 const Editor = dynamic(() => import("@/components/ui/Editor"), {
   ssr: false,
@@ -26,6 +29,39 @@ export default function AddProductPage() {
   const dispatch = useDispatch();
   const [publish, setPublish] = useState(true);
 
+  
+  const { categories, loading: categoriesLoading } = useSelector(
+    (state) => state.category
+  );
+  const { brands, loading: brandsLoading } = useSelector(
+    (state) => state.brand
+  );
+
+  useEffect(() => {
+    dispatch(getCategories());
+    dispatch(getBrands());
+  }, [dispatch]);
+
+  
+  const categoryOptions = useMemo(() => {
+    return (categories || []).flatMap((category) => {
+      if (!category.subcategories || category.subcategories.length === 0) {
+        return [{ value: category._id, label: category.name }];
+      }
+      return category.subcategories.map((sub) => ({
+        value: sub._id,
+        label: `${category.name} / ${sub.name}`,
+      }));
+    });
+  }, [categories]);
+
+  const brandOptions = useMemo(() => {
+    return (brands || []).map((brand) => ({
+      value: brand._id,
+      label: brand.name,
+    }));
+  }, [brands]);
+
   const [form, setForm] = useState({
     // Details
     name: "",
@@ -37,8 +73,7 @@ export default function AddProductPage() {
     productSKU: "",
     quantity: "",
     category: "",
-    colors: "",
-    sizes: "",
+    brand: "",
     tags: "",
     gender: {
       men: false,
@@ -60,9 +95,12 @@ export default function AddProductPage() {
     tax: "",
   });
 
-  // const handleCreateProduct = () => {
-  //   console.log({ ...form, publish });
-  // };
+ 
+  const [hasVariants, setHasVariants] = useState(false);
+  const [attributes, setAttributes] = useState([]);
+  const [variants, setVariants] = useState([]);
+
+ 
 
   const handleCreateProduct = async () => {
   try {
@@ -80,8 +118,7 @@ export default function AddProductPage() {
       productSKU: form.productSKU,
       quantity: Number(form.quantity) || 0,
       category: form.category,
-      colors: form.colors ? [form.colors] : [],
-      sizes: form.sizes ? [form.sizes] : [],
+      brand: form.brand,
       tags: form.tags,
       gender: form.gender,
       saleLabel: form.saleLabel,
@@ -90,6 +127,23 @@ export default function AddProductPage() {
       salePrice: Number(form.salePrice) || 0,
       priceIncludesTaxes: form.priceIncludesTaxes,
       tax: Number(form.tax) || 0,
+      hasVariants,
+      attributes: hasVariants
+        ? attributes
+            .filter((attr) => attr.name.trim() && attr.values.length > 0)
+            .map((attr) => ({ name: attr.name.trim(), values: attr.values }))
+        : [],
+      variants: hasVariants
+        ? variants
+            .filter((v) => v.enabled)
+            .map((v) => ({
+              combination: v.combination,
+              sku: v.sku,
+              price: Number(v.price) || 0,
+              salePrice: v.salePrice ? Number(v.salePrice) : undefined,
+              stock: Number(v.stock) || 0,
+            }))
+        : [],
       publish,
     };
 
@@ -205,43 +259,42 @@ export default function AddProductPage() {
                 className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
               />
             </div>
-            <Select
-              label="Category"
-              value={form.category}
-              onChange={(val) => setForm({ ...form, category: val })}
-              options={[
-                { value: "face-masks", label: "Face masks" },
-                { value: "clothing", label: "Clothing" },
-                { value: "accessories", label: "Accessories" },
-              ]}
-              placeholder="Face masks"
-            />
+            <div>
+              <Select
+                label="Category"
+                value={form.category}
+                onChange={(val) => setForm({ ...form, category: val })}
+                options={categoryOptions}
+                placeholder={
+                  categoriesLoading ? "Loading categories..." : "Select a category"
+                }
+              />
+              {/* <a
+                href="/admin/categories"
+                className="mt-1.5 inline-block text-xs font-medium text-emerald-600 hover:text-emerald-700 transition"
+              >
+                Manage categories
+              </a> */}
+            </div>
           </div>
 
-          {/* GRID: Colors & Sizes */}
+          {/* GRID: Brand */}
           <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Colors"
-              value={form.colors}
-              onChange={(val) => setForm({ ...form, colors: val })}
-              options={[
-                { value: "red", label: "Red" },
-                { value: "blue", label: "Blue" },
-                { value: "black", label: "Black" },
-                { value: "white", label: "White" },
-              ]}
-            />
-            <Select
-              label="Sizes"
-              value={form.sizes}
-              onChange={(val) => setForm({ ...form, sizes: val })}
-              options={[
-                { value: "s", label: "Small" },
-                { value: "m", label: "Medium" },
-                { value: "l", label: "Large" },
-                { value: "xl", label: "XL" },
-              ]}
-            />
+            <div>
+              <Select
+                label="Brand"
+                value={form.brand}
+                onChange={(val) => setForm({ ...form, brand: val })}
+                options={brandOptions}
+                placeholder={brandsLoading ? "Loading brands..." : "Select a brand"}
+              />
+              {/* <a
+                href="/admin/brands"
+                className="mt-1.5 inline-block text-xs font-medium text-emerald-600 hover:text-emerald-700 transition"
+              >
+                Manage brands
+              </a> */}
+            </div>
           </div>
 
           {/* TAGS */}
@@ -326,9 +379,38 @@ export default function AddProductPage() {
         </CollapsibleSection>
 
         <CollapsibleSection
+          title="Attributes & Variants"
+          description="Add options like color or size, and set pricing per combination"
+        >
+          <Toggle
+            checked={hasVariants}
+            onChange={setHasVariants}
+            label="This product has multiple variants (e.g. color, size)"
+          />
+
+          {hasVariants && (
+            <AttributeVariantManager
+              attributes={attributes}
+              onAttributesChange={setAttributes}
+              variants={variants}
+              onVariantsChange={setVariants}
+              basePrice={form.regularPrice}
+            />
+          )}
+        </CollapsibleSection>
+
+        <CollapsibleSection
           title="Pricing"
           description="Price related inputs"
         >
+          {hasVariants && (
+            <p className="text-xs text-slate-500 -mt-1">
+              This price is used as the default for new variants — edit
+              individual variant rows above to charge more or less for
+              specific combinations.
+            </p>
+          )}
+
           <PrefixInput
             label="Regular price"
             prefix="$"
