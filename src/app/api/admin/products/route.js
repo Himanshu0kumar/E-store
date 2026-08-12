@@ -1,24 +1,14 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { requireRole } from "@/lib/auth/requireRole";
 import {
   createProduct,
   getAllProducts,
 } from "@/services/product.service";
 
 // GET all products
-export async function GET(req) {
+export async function GET() {
   try {
     await connectDB();
-
-    const auth = await requireRole(req, ["admin"]);
-    if (!auth) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 }
-      );
-    }
-
     const products = await getAllProducts();
     return NextResponse.json(products);
   } catch (error) {
@@ -34,15 +24,6 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     await connectDB();
-
-    const auth = await requireRole(req, ["admin"]);
-    if (!auth) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 }
-      );
-    }
-
     const body = await req.json();
     const product = await createProduct(body);
 
@@ -50,7 +31,7 @@ export async function POST(req) {
   } catch (error) {
     console.error("Create product error:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, message: error.message, error: error.message },
       { status: 400 }
     );
   }

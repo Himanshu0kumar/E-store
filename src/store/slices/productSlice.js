@@ -5,7 +5,7 @@ import axios from "@/lib/axios";
 export const fetchProducts = createAsyncThunk(
   "products/fetchAll",
   async () => {
-    const res = await axios.get("/api/admin/products");
+    const res = await axios.get("/api/products");
     return res.data;
   }
 );
@@ -14,7 +14,7 @@ export const fetchProducts = createAsyncThunk(
 export const fetchProductById = createAsyncThunk(
   "products/fetchById",
   async (id) => {
-    const res = await axios.get(`/api/admin/products/${id}`);
+    const res = await axios.get(`/api/products/${id}`);
     return res.data;
   }
 );
@@ -27,7 +27,9 @@ export const createProduct = createAsyncThunk(
       const res = await axios.post("/api/admin/products", productData);
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed to create product");
+      return rejectWithValue(
+        err.response?.data?.error || err.response?.data?.message || "Failed to create product"
+      );
     }
   }
 );
@@ -40,7 +42,9 @@ export const updateProduct = createAsyncThunk(
       const res = await axios.put(`/api/admin/products/${id}`, productData);
       return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed to update product");
+      return rejectWithValue(
+        err.response?.data?.error || err.response?.data?.message || "Failed to update product"
+      );
     }
   }
 );
@@ -53,7 +57,9 @@ export const deleteProduct = createAsyncThunk(
       await axios.delete(`/api/admin/products/${id}`);
       return id;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed to delete product");
+      return rejectWithValue(
+        err.response?.data?.error || err.response?.data?.message || "Failed to delete product"
+      );
     }
   }
 );
@@ -97,6 +103,7 @@ const productSlice = createSlice({
       // single product
       .addCase(fetchProductById.pending, (state) => {
         state.loading = true;
+        state.selectedProduct = null;
       })
       .addCase(fetchProductById.fulfilled, (state, action) => {
         state.loading = false;

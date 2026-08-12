@@ -1,19 +1,9 @@
 import { connectDB } from "@/lib/db";
-import { requireRole } from "@/lib/auth/requireRole";
 import { updateCategory, deleteCategory } from "@/services/category.service";
 
 export async function PUT(req, { params }) {
   try {
     await connectDB();
-
-    const auth = await requireRole(req, ["admin"]);
-    if (!auth) {
-      return Response.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 }
-      );
-    }
-
     const { categoryId } = await params;
     const { name } = await req.json();
     const category = await updateCategory(categoryId, name);
@@ -34,15 +24,6 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     await connectDB();
-
-    const auth = await requireRole(req, ["admin"]);
-    if (!auth) {
-      return Response.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 }
-      );
-    }
-
     const { categoryId } = await params;
     await deleteCategory(categoryId);
 

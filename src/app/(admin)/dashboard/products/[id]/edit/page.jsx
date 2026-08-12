@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -13,6 +13,7 @@ import Toggle from "@/components/ui/Toggle";
 import Select from "@/components/ui/Select";
 import Checkbox from "@/components/ui/Checkbox";
 import LabelToggle from "@/components/ui/LabelToggle";
+import AttributeVariantManager from "@/components/ui/AttributeVariantManager";
 
 import { uploadImages } from "@/store/slices/uploadSlice";
 import {
@@ -20,6 +21,8 @@ import {
   updateProduct,
   clearUpdateStatus,
 } from "@/store/slices/productSlice";
+import { getCategories } from "@/store/slices/categorySlice";
+import { getBrands } from "@/store/slices/brandSlice";
 
 const Editor = dynamic(() => import("@/components/ui/Editor"), {
   ssr: false,
@@ -33,12 +36,66 @@ export default function EditProductPage() {
   const productId = params.id;
   const router = useRouter();
   const dispatch = useDispatch();
+
   const { selectedProduct, loading, updateStatus, error } = useSelector(
     (state) => state.products
   );
+  const { categories, loading: categoriesLoading } = useSelector(
+    (state) => state.category
+  );
+  const { brands, loading: brandsLoading } = useSelector(
+    (state) => state.brand
+  );
 
   const [publish, setPublish] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const [hasVariants, setHasVariants] = useState(false);
+  const [attributes, setAttributes] = useState([]);
+  const [variants, setVariants] = useState([]);
+
+  useEffect(() => {
+    dispatch(getCategories());
+    dispatch(getBrands());
+  }, [dispatch]);
+
+  const categoryOptions = useMemo(() => {
+    const list = [];
+    const added = new Set();
+
+    (categories || []).forEach((category) => {
+      if (category.name && !added.has(category.name.toLowerCase())) {
+        list.push({ value: category.name, label: category.name });
+        added.add(category.name.toLowerCase());
+      }
+      if (category.subcategories && Array.isArray(category.subcategories)) {
+        category.subcategories.forEach((sub) => {
+          if (sub.name && !added.has(sub.name.toLowerCase())) {
+            list.push({ value: sub.name, label: `${category.name} / ${sub.name}` });
+            added.add(sub.name.toLowerCase());
+          }
+        });
+      }
+    });
+
+    return list;
+  }, [categories]);
+
+  const brandOptions = useMemo(() => {
+    const list = [];
+    const added = new Set();
+
+    (brands || []).forEach((brand) => {
+      if (brand.name && !added.has(brand.name.toLowerCase())) {
+        list.push({ value: brand.name, label: brand.name });
+        added.add(brand.name.toLowerCase());
+      }
+    });
+
+    return list;
+  }, [brands]);
 
   const [form, setForm] = useState({
     name: "",
@@ -49,8 +106,7 @@ export default function EditProductPage() {
     productSKU: "",
     quantity: "",
     category: "",
-    colors: "",
-    sizes: "",
+    brand: "",
     tags: "",
     gender: { men: false, women: false, kids: false },
     saleLabel: { enabled: false, value: "" },
@@ -78,41 +134,73 @@ export default function EditProductPage() {
         images: selectedProduct.images || [],
         productCode: selectedProduct.productCode || "",
         productSKU: selectedProduct.productSKU || "",
-        quantity: selectedProduct.quantity || "",
+        quantity: selectedProduct.quantity ?? "",
         category: selectedProduct.category || "",
-        colors: selectedProduct.colors?.[0] || "",
-        sizes: selectedProduct.sizes?.[0] || "",
+        brand: selectedProduct.brand || "",
         tags: selectedProduct.tags || "",
-        gender: selectedProduct.gender || {
-          men: false,
-          women: false,
-          kids: false,
+        gender: {
+          men: selectedProduct.gender?.men || false,
+          women: selectedProduct.gender?.women || false,
+          kids: selectedProduct.gender?.kids || false,
         },
-        saleLabel: selectedProduct.saleLabel || { enabled: false, value: "" },
-        newLabel: selectedProduct.newLabel || { enabled: false, value: "" },
-        regularPrice: selectedProduct.regularPrice || "",
-        salePrice: selectedProduct.salePrice || "",
+        saleLabel: {
+          enabled: selectedProduct.saleLabel?.enabled || false,
+          value: selectedProduct.saleLabel?.value || "",
+        },
+        newLabel: {
+          enabled: selectedProduct.newLabel?.enabled || false,
+          value: selectedProduct.newLabel?.value || "",
+        },
+        regularPrice: selectedProduct.regularPrice ?? "",
+        salePrice: selectedProduct.salePrice ?? "",
         priceIncludesTaxes: selectedProduct.priceIncludesTaxes || false,
-        tax: selectedProduct.tax || "",
+        tax: selectedProduct.tax ?? "",
       });
+
+      const formattedAttributes = (selectedProduct.attributes || []).map((attr, index) => ({
+        id: attr.id || attr._id || `attr_${index}_${Date.now()}`,
+        name: attr.name || "",
+        values: Array.isArray(attr.values) ? attr.values : [],
+      }));
+
+      const formattedVariants = (selectedProduct.variants || []).map((v) => {
+        const combinationObj =
+          v.combination instanceof Map
+            ? Object.fromEntries(v.combination)
+            : v.combination || {};
+
+        const key = Object.entries(combinationObj)
+          .map(([k, val]) => `${k}:${val}`)
+          .join("|");
+
+        return {
+          key: v.key || key,
+          combination: combinationObj,
+          sku: v.sku || "",
+          price: v.price ?? "",
+          salePrice: v.salePrice ?? "",
+          stock: v.stock ?? 0,
+          enabled: v.enabled !== undefined ? v.enabled : true,
+        };
+      });
+
+      setHasVariants(selectedProduct.hasVariants || false);
+      setAttributes(formattedAttributes);
+      setVariants(formattedVariants);
       setPublish(selectedProduct.publish ?? true);
     }
   }, [selectedProduct]);
 
-  // Show success message and auto-hide
-  useEffect(() => {
-    if (updateStatus === "succeeded") {
-      setShowMessage(true);
-      const timer = setTimeout(() => {
-        setShowMessage(false);
-        dispatch(clearUpdateStatus());
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [updateStatus, dispatch]);
-
   const handleUpdateProduct = async () => {
     try {
+      setIsSubmitting(true);
+      setErrorMessage("");
+
+      if (!form.name.trim()) {
+        setErrorMessage("Please enter a product name.");
+        return;
+      }
+
       let imageUrls = form.images;
 
       const hasNewImages = form.images.some((img) => img instanceof File);
@@ -128,14 +216,13 @@ export default function EditProductPage() {
       const payload = {
         name: form.name,
         subDescription: form.subDescription,
-        description: form.content,
+        description: form.content.trim() || form.subDescription.trim() || form.name.trim(),
         images: imageUrls,
         productCode: form.productCode,
         productSKU: form.productSKU,
         quantity: Number(form.quantity) || 0,
         category: form.category,
-        colors: form.colors ? [form.colors] : [],
-        sizes: form.sizes ? [form.sizes] : [],
+        brand: form.brand,
         tags: form.tags,
         gender: form.gender,
         saleLabel: form.saleLabel,
@@ -144,13 +231,38 @@ export default function EditProductPage() {
         salePrice: Number(form.salePrice) || 0,
         priceIncludesTaxes: form.priceIncludesTaxes,
         tax: Number(form.tax) || 0,
+        hasVariants,
+        attributes: hasVariants
+          ? attributes
+              .filter((attr) => attr.name.trim() && attr.values.length > 0)
+              .map((attr) => ({ name: attr.name.trim(), values: attr.values }))
+          : [],
+        variants: hasVariants
+          ? variants
+              .filter((v) => v.enabled)
+              .map((v) => ({
+                combination: v.combination,
+                sku: v.sku,
+                price: Number(v.price) || 0,
+                salePrice: v.salePrice ? Number(v.salePrice) : undefined,
+                stock: Number(v.stock) || 0,
+              }))
+          : [],
         publish,
       };
 
-      await dispatch(updateProduct({ id: productId, productData: payload }))
-        .unwrap();
+      await dispatch(updateProduct({ id: productId, productData: payload })).unwrap();
+
+      setShowMessage(true);
+      setTimeout(() => {
+        setShowMessage(false);
+      }, 3000);
     } catch (err) {
-      console.error("Failed to update product:", err);
+      const msg = typeof err === "string" ? err : err?.message || err?.error || "Failed to update product";
+      console.error("Failed to update product:", msg);
+      setErrorMessage(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -191,7 +303,7 @@ export default function EditProductPage() {
       </div>
 
       {/* SUCCESS MESSAGE */}
-      {showMessage && updateStatus === "succeeded" && (
+      {showMessage && (
         <div className="mb-6 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           <span className="text-lg">✓</span>
           <span>Product updated successfully!</span>
@@ -199,10 +311,10 @@ export default function EditProductPage() {
       )}
 
       {/* ERROR MESSAGE */}
-      {updateStatus === "failed" && (
+      {errorMessage && (
         <div className="mb-6 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="text-lg">✕</span>
-          <span>{error || "Failed to update product"}</span>
+          <span>{errorMessage}</span>
         </div>
       )}
 
@@ -275,6 +387,7 @@ export default function EditProductPage() {
           title="Properties"
           description="Additional functions and attributes..."
         >
+          {/* GRID: Product code & Product SKU */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="mb-2 text-sm font-medium text-slate-500">
@@ -306,6 +419,7 @@ export default function EditProductPage() {
             </div>
           </div>
 
+          {/* GRID: Quantity & Category */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="mb-2 text-sm font-medium text-slate-500">
@@ -321,44 +435,33 @@ export default function EditProductPage() {
                 className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
               />
             </div>
-            <Select
-              label="Category"
-              value={form.category}
-              onChange={(val) => setForm({ ...form, category: val })}
-              options={[
-                { value: "face-masks", label: "Face masks" },
-                { value: "clothing", label: "Clothing" },
-                { value: "accessories", label: "Accessories" },
-              ]}
-              placeholder="Face masks"
-            />
+            <div>
+              <Select
+                label="Category"
+                value={form.category}
+                onChange={(val) => setForm({ ...form, category: val })}
+                options={categoryOptions}
+                placeholder={
+                  categoriesLoading ? "Loading categories..." : "Select a category"
+                }
+              />
+            </div>
           </div>
 
+          {/* GRID: Brand */}
           <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Colors"
-              value={form.colors}
-              onChange={(val) => setForm({ ...form, colors: val })}
-              options={[
-                { value: "red", label: "Red" },
-                { value: "blue", label: "Blue" },
-                { value: "black", label: "Black" },
-                { value: "white", label: "White" },
-              ]}
-            />
-            <Select
-              label="Sizes"
-              value={form.sizes}
-              onChange={(val) => setForm({ ...form, sizes: val })}
-              options={[
-                { value: "s", label: "Small" },
-                { value: "m", label: "Medium" },
-                { value: "l", label: "Large" },
-                { value: "xl", label: "XL" },
-              ]}
-            />
+            <div>
+              <Select
+                label="Brand"
+                value={form.brand}
+                onChange={(val) => setForm({ ...form, brand: val })}
+                options={brandOptions}
+                placeholder={brandsLoading ? "Loading brands..." : "Select a brand"}
+              />
+            </div>
           </div>
 
+          {/* TAGS */}
           <div>
             <p className="mb-2 text-sm font-medium text-slate-500">Tags</p>
             <input
@@ -370,6 +473,7 @@ export default function EditProductPage() {
             />
           </div>
 
+          {/* GENDER */}
           <div>
             <p className="mb-3 text-sm font-medium text-slate-700">Gender</p>
             <div className="flex gap-6">
@@ -406,6 +510,7 @@ export default function EditProductPage() {
             </div>
           </div>
 
+          {/* SALE LABEL */}
           <LabelToggle
             enabled={form.saleLabel.enabled}
             onEnabledChange={(val) =>
@@ -425,6 +530,7 @@ export default function EditProductPage() {
             placeholder="Sale label"
           />
 
+          {/* NEW LABEL */}
           <LabelToggle
             enabled={form.newLabel.enabled}
             onEnabledChange={(val) =>
@@ -445,10 +551,41 @@ export default function EditProductPage() {
           />
         </CollapsibleSection>
 
+        {/* ATTRIBUTES & VARIANTS */}
+        <CollapsibleSection
+          title="Attributes & Variants"
+          description="Add options like color or size, and set pricing per combination"
+        >
+          <Toggle
+            checked={hasVariants}
+            onChange={setHasVariants}
+            label="This product has multiple variants (e.g. color, size)"
+          />
+
+          {hasVariants && (
+            <AttributeVariantManager
+              attributes={attributes}
+              onAttributesChange={setAttributes}
+              variants={variants}
+              onVariantsChange={setVariants}
+              basePrice={form.regularPrice}
+            />
+          )}
+        </CollapsibleSection>
+
+        {/* PRICING */}
         <CollapsibleSection
           title="Pricing"
           description="Price related inputs"
         >
+          {hasVariants && (
+            <p className="-mt-1 text-xs text-slate-500">
+              This price is used as the default for new variants — edit
+              individual variant rows above to charge more or less for
+              specific combinations.
+            </p>
+          )}
+
           <PrefixInput
             label="Regular price"
             prefix="$"
@@ -499,11 +636,11 @@ export default function EditProductPage() {
         <button
           type="button"
           onClick={handleUpdateProduct}
-          disabled={updateStatus === "loading"}
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={isSubmitting}
+          className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Save size={18} />
-          {updateStatus === "loading" ? "Updating..." : "Update product"}
+          {isSubmitting ? "Updating..." : "Update product"}
         </button>
       </div>
     </div>

@@ -1,19 +1,9 @@
 import { connectDB } from "@/lib/db";
-import { requireRole } from "@/lib/auth/requireRole";
 import { getBrands, createBrand } from "@/services/brand.service";
 
-export async function GET(req) {
+export async function GET() {
   try {
     await connectDB();
-
-    const auth = await requireRole(req, ["admin"]);
-    if (!auth) {
-      return Response.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 }
-      );
-    }
-
     const brands = await getBrands();
     return Response.json({ success: true, data: brands }, { status: 200 });
   } catch (error) {
@@ -28,15 +18,6 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     await connectDB();
-
-    const auth = await requireRole(req, ["admin"]);
-    if (!auth) {
-      return Response.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 }
-      );
-    }
-
     const { name } = await req.json();
     const brand = await createBrand(name);
 

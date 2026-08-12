@@ -1,5 +1,4 @@
 import { connectDB } from "@/lib/db";
-import { requireRole } from "@/lib/auth/requireRole";
 import {
   updateSubcategory,
   deleteSubcategory,
@@ -8,15 +7,6 @@ import {
 export async function PUT(req, { params }) {
   try {
     await connectDB();
-
-    const auth = await requireRole(req, ["admin"]);
-    if (!auth) {
-      return Response.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 }
-      );
-    }
-
     const { categoryId, subcategoryId } = await params;
     const { name } = await req.json();
     const category = await updateSubcategory(categoryId, subcategoryId, name);
@@ -37,15 +27,6 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   try {
     await connectDB();
-
-    const auth = await requireRole(req, ["admin"]);
-    if (!auth) {
-      return Response.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 }
-      );
-    }
-
     const { categoryId, subcategoryId } = await params;
     const category = await deleteSubcategory(categoryId, subcategoryId);
 

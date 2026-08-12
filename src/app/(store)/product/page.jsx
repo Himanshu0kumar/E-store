@@ -1,21 +1,30 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchProducts } from "@/store/slices/productSlice";
 import { Search, SlidersHorizontal, X, PackageSearch, ChevronDown } from "lucide-react";
 import Pagination from "@/components/common/Pagination";
 import ProductCard from "@/components/common/ProductCard";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
-// ----------------------------------------------------------------
-// Mock catalog. Swap this out for a real API call (e.g. a
-// useEffect + fetch, or a server component fetch upstream) — the
-// filtering/search/sort/pagination logic below only cares that
-// PRODUCTS is an array shaped like this.
-// ----------------------------------------------------------------
-const CATEGORIES = ["Clothing", "Footwear", "Accessories", "Electronics", "Home"];
-const SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
-const COLORS = [
+const COLOR_HEX_MAP = {
+  black: "#0F172A",
+  white: "#F8FAFC",
+  red: "#E11D48",
+  rose: "#E11D48",
+  blue: "#2563EB",
+  emerald: "#059669",
+  green: "#059669",
+  amber: "#D97706",
+  yellow: "#EAB308",
+  purple: "#9333EA",
+  gray: "#64748B",
+  slate: "#475569",
+};
+
+const DEFAULT_COLOR_OPTIONS = [
   { name: "Black", hex: "#0F172A" },
   { name: "White", hex: "#F8FAFC" },
   { name: "Emerald", hex: "#059669" },
@@ -23,6 +32,8 @@ const COLORS = [
   { name: "Amber", hex: "#D97706" },
   { name: "Blue", hex: "#2563EB" },
 ];
+
+const DEFAULT_SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"];
 
 const SORT_OPTIONS = [
   { value: "featured", label: "Featured" },
@@ -33,47 +44,12 @@ const SORT_OPTIONS = [
   { value: "rating", label: "Top Rated" },
 ];
 
-const PRODUCT_NAMES = [
-  "Classic Crewneck Tee", "Tailored Chino Trousers", "Merino Wool Sweater",
-  "Everyday Sneakers", "Trail Running Shoes", "Leather Ankle Boots",
-  "Canvas Tote Bag", "Minimalist Watch", "Polarized Sunglasses",
-  "Noise-Cancelling Headphones", "Portable Bluetooth Speaker", "USB-C Fast Charger",
-  "Ceramic Table Lamp", "Linen Throw Pillow", "Woven Storage Basket",
-  "Slim Fit Denim Jacket", "Relaxed Cotton Hoodie", "Pleated Midi Skirt",
-  "Suede Chelsea Boots", "Performance Running Socks", "Structured Backpack",
-  "Stainless Steel Water Bottle", "Wireless Charging Pad", "Smart Fitness Band",
-];
-
-const PRODUCTS = PRODUCT_NAMES.map((name, i) => {
-  const category = CATEGORIES[i % CATEGORIES.length];
-  const price = 24.99 + ((i * 13) % 180);
-  const hasDiscount = i % 3 === 0;
-  const discountPercent = hasDiscount ? 10 + ((i * 7) % 30) : 0;
-  const originalPrice = hasDiscount ? price / (1 - discountPercent / 100) : price;
-
-  return {
-    id: i + 1,
-    name,
-    category,
-    price,
-    originalPrice,
-    discountPercent,
-    rating: 3.5 + ((i * 3) % 15) / 10,
-    reviewCount: 12 + ((i * 37) % 480),
-    soldCount: 5 + ((i * 53) % 900),
-    daysAgoAdded: (i * 11) % 120, // lower = newer
-    isNew: ((i * 11) % 120) < 14,
-    image: `https://picsum.photos/seed/product-${i + 1}/600/600`,
-    sizes: category === "Clothing" || category === "Footwear"
-      ? SIZES.slice(i % 2, i % 2 + 4)
-      : [],
-    colors: [COLORS[i % COLORS.length], COLORS[(i + 2) % COLORS.length]],
-  };
-});
-
 const PAGE_SIZE = 9;
 
 export default function ProductsPage() {
+  const dispatch = useDispatch();
+  const { items: dbProducts, loading } = useSelector((state) => state.products);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
@@ -81,6 +57,128 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState("featured");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
+
+  // Transform and normalize products strictly from DB state
+  const allProducts = useMemo(() => {
+    if (!Array.isArray(dbProducts)) return [];
+
+    return dbProducts.map((p) => {
+      const id = p._id || p.id;
+      const name = p.name || "Untitled Product";
+      const category = p.category || "General";
+
+      const rawPrice =
+        typeof p.price === "number"
+          ? p.price
+          : Number(p.salePrice ?? p.regularPrice ?? p.priceRange?.min) || 0;
+      const price = isNaN(rawPrice) ? 0 : rawPrice;
+
+      const rawOriginal =
+        typeof p.originalPrice === "number"
+          ? p.originalPrice
+          : (p.salePrice && p.regularPrice > p.salePrice ? Number(p.regularPrice) : null);
+      const originalPrice = rawOriginal && !isNaN(rawOriginal) && rawOriginal > price ? rawOriginal : null;
+
+      let discountPercent = Number(p.discountPercent) || 0;
+      if (!discountPercent && originalPrice && price < originalPrice) {
+        discountPercent = Math.round(((originalPrice - price) / originalPrice) * 100);
+      }
+
+      // Extract sizes
+      let sizes = Array.isArray(p.sizes) ? p.sizes : [];
+      if (sizes.length === 0 && Array.isArray(p.attributes)) {
+        const sizeAttr = p.attributes.find((a) => a?.name && a.name.toLowerCase() === "size");
+        if (sizeAttr && Array.isArray(sizeAttr.values)) {
+          sizes = sizeAttr.values;
+        }
+      }
+
+      // Extract colors
+      let colors = Array.isArray(p.colors) ? p.colors : [];
+      if (colors.length === 0 && Array.isArray(p.attributes)) {
+        const colorAttr = p.attributes.find((a) => a?.name && a.name.toLowerCase() === "color");
+        if (colorAttr && Array.isArray(colorAttr.values)) {
+          colors = colorAttr.values.map((val) => ({
+            name: val,
+            hex: typeof val === "string" ? (COLOR_HEX_MAP[val.toLowerCase()] || "#94A3B8") : "#94A3B8",
+          }));
+        }
+      }
+
+      const rating = typeof p.rating === "number" && p.rating > 0 ? p.rating : 4.5;
+      const reviewCount = typeof p.reviewCount === "number" ? p.reviewCount : 12;
+      const soldCount = typeof p.soldCount === "number" ? p.soldCount : 0;
+      const daysAgoAdded = p.createdAt
+        ? Math.floor((Date.now() - new Date(p.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      const image =
+        p.image ||
+        (Array.isArray(p.images) && p.images.length > 0
+          ? p.images[0]
+          : "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80");
+
+      return {
+        ...p,
+        id,
+        _id: id,
+        name,
+        category,
+        price,
+        originalPrice,
+        discountPercent,
+        rating,
+        reviewCount,
+        soldCount,
+        daysAgoAdded,
+        image,
+        sizes,
+        colors,
+      };
+    });
+  }, [dbProducts]);
+
+  // Extract dynamic categories from real DB products
+  const availableCategories = useMemo(() => {
+    const set = new Set();
+    allProducts.forEach((p) => {
+      if (p.category) set.add(p.category);
+    });
+    const list = Array.from(set);
+    return list.length > 0 ? list : ["Clothing", "Footwear", "Accessories", "Electronics", "Home"];
+  }, [allProducts]);
+
+  // Extract dynamic sizes from real DB products
+  const availableSizes = useMemo(() => {
+    const set = new Set();
+    allProducts.forEach((p) => {
+      if (Array.isArray(p.sizes)) {
+        p.sizes.forEach((s) => set.add(s));
+      }
+    });
+    const list = Array.from(set);
+    return list.length > 0 ? list : DEFAULT_SIZE_OPTIONS;
+  }, [allProducts]);
+
+  // Extract dynamic colors from real DB products
+  const availableColors = useMemo(() => {
+    const map = new Map();
+    allProducts.forEach((p) => {
+      if (Array.isArray(p.colors)) {
+        p.colors.forEach((c) => {
+          const name = typeof c === "string" ? c : c.name;
+          const hex = typeof c === "string" ? (COLOR_HEX_MAP[c.toLowerCase()] || "#94A3B8") : (c.hex || "#94A3B8");
+          if (name) map.set(name, hex);
+        });
+      }
+    });
+    const list = Array.from(map.entries()).map(([name, hex]) => ({ name, hex }));
+    return list.length > 0 ? list : DEFAULT_COLOR_OPTIONS;
+  }, [allProducts]);
 
   const toggleValue = (list, setList, value) => {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
@@ -103,9 +201,9 @@ export default function ProductsPage() {
   const hasActiveFilters =
     searchTerm || selectedCategories.length || selectedSizes.length || selectedColors.length;
 
-  // Filtering + search, recomputed only when an input changes.
+  // Filtering + search
   const filteredProducts = useMemo(() => {
-    const results = PRODUCTS.filter((product) => {
+    const results = allProducts.filter((product) => {
       const matchesSearch = product.name
         .toLowerCase()
         .includes(searchTerm.trim().toLowerCase());
@@ -119,7 +217,10 @@ export default function ProductsPage() {
 
       const matchesColor =
         selectedColors.length === 0 ||
-        product.colors.some((color) => selectedColors.includes(color.name));
+        product.colors.some((color) => {
+          const colorName = typeof color === "string" ? color : color.name;
+          return selectedColors.includes(colorName);
+        });
 
       return matchesSearch && matchesCategory && matchesSize && matchesColor;
     });
@@ -142,11 +243,11 @@ export default function ProductsPage() {
         sorted.sort((a, b) => b.soldCount - a.soldCount);
         break;
       default:
-        // "featured" — keep catalog order
+        // "featured"
         break;
     }
     return sorted;
-  }, [searchTerm, selectedCategories, selectedSizes, selectedColors, sortBy]);
+  }, [allProducts, searchTerm, selectedCategories, selectedSizes, selectedColors, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -157,11 +258,11 @@ export default function ProductsPage() {
 
   const FilterPanel = (
     <div className="space-y-6">
-      {/* Category */}
+      {/* Category Filter */}
       <div>
         <h3 className="text-sm font-semibold text-slate-900 mb-3">Category</h3>
         <div className="space-y-2">
-          {CATEGORIES.map((category) => (
+          {availableCategories.map((category) => (
             <label
               key={category}
               className="flex items-center gap-2.5 cursor-pointer group"
@@ -184,11 +285,11 @@ export default function ProductsPage() {
 
       <div className="h-px bg-slate-200" />
 
-      {/* Size */}
+      {/* Size Filter */}
       <div>
         <h3 className="text-sm font-semibold text-slate-900 mb-3">Size</h3>
         <div className="flex flex-wrap gap-2">
-          {SIZES.map((size) => {
+          {availableSizes.map((size) => {
             const isActive = selectedSizes.includes(size);
             return (
               <button
@@ -209,11 +310,11 @@ export default function ProductsPage() {
 
       <div className="h-px bg-slate-200" />
 
-      {/* Color */}
+      {/* Color Filter */}
       <div>
         <h3 className="text-sm font-semibold text-slate-900 mb-3">Color</h3>
         <div className="flex flex-wrap gap-3">
-          {COLORS.map((color) => {
+          {availableColors.map((color) => {
             const isActive = selectedColors.includes(color.name);
             return (
               <button
@@ -248,7 +349,7 @@ export default function ProductsPage() {
     <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
       <Header />
 
-      {/* Page title */}
+      {/* Page header banner */}
       <div className="border-b border-slate-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-1">
@@ -263,7 +364,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Search + Sort toolbar */}
+      {/* Toolbar: Search + Mobile Filter Toggle + Sorting */}
       <div className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="relative w-full sm:max-w-sm">
@@ -290,7 +391,7 @@ export default function ProductsPage() {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            {/* Mobile filter toggle */}
+            {/* Mobile filter button */}
             <button
               onClick={() => setShowMobileFilters(true)}
               className="lg:hidden flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition"
@@ -302,7 +403,7 @@ export default function ProductsPage() {
               )}
             </button>
 
-            {/* Sort */}
+            {/* Sort Select */}
             <div className="relative">
               <select
                 value={sortBy}
@@ -327,7 +428,7 @@ export default function ProductsPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8 flex-1 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Desktop filter sidebar */}
+          {/* Desktop Filter Sidebar */}
           <aside className="hidden lg:block lg:col-span-1">
             <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 sticky top-32">
               <h2 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
@@ -338,7 +439,7 @@ export default function ProductsPage() {
             </div>
           </aside>
 
-          {/* Mobile filter drawer */}
+          {/* Mobile Filter Drawer */}
           {showMobileFilters && (
             <div className="fixed inset-0 z-50 lg:hidden">
               <div
@@ -370,13 +471,35 @@ export default function ProductsPage() {
             </div>
           )}
 
-          {/* Product grid */}
+          {/* Product Grid Area */}
           <div className="lg:col-span-4">
-            {paginatedProducts.length > 0 ? (
+            {loading ? (
+              /* Industry Standard Skeleton Loaders */
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm animate-pulse flex flex-col justify-between h-[380px]"
+                  >
+                    <div>
+                      <div className="aspect-square bg-slate-200" />
+                      <div className="p-4 space-y-3">
+                        <div className="h-3 bg-slate-200 rounded w-1/4" />
+                        <div className="h-5 bg-slate-200 rounded w-3/4" />
+                        <div className="h-4 bg-slate-200 rounded w-1/3" />
+                      </div>
+                    </div>
+                    <div className="p-4 pt-0">
+                      <div className="h-10 bg-slate-200 rounded-xl w-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : paginatedProducts.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                   {paginatedProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <ProductCard key={product._id || product.id} product={product} />
                   ))}
                 </div>
 
@@ -394,17 +517,23 @@ export default function ProductsPage() {
                   <PackageSearch className="w-8 h-8 text-slate-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900 mb-1">
-                  No products match your filters
+                  {hasActiveFilters
+                    ? "No products match your filters"
+                    : "No products available"}
                 </h3>
                 <p className="text-slate-500 text-sm mb-6">
-                  Try adjusting your search or clearing filters
+                  {hasActiveFilters
+                    ? "Try adjusting your search terms or clearing filters"
+                    : "Products added via the admin panel will appear here automatically."}
                 </p>
-                <button
-                  onClick={clearAllFilters}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition"
-                >
-                  Clear all filters
-                </button>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition"
+                  >
+                    Clear all filters
+                  </button>
+                )}
               </div>
             )}
           </div>

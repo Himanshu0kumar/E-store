@@ -52,7 +52,7 @@ export async function PUT(req, { params }) {
   } catch (error) {
     console.error("Error updating product:", error);
     return NextResponse.json(
-      { message: "Failed to update product" },
+      { success: false, message: error.message, error: error.message },
       { status: 500 }
     );
   }

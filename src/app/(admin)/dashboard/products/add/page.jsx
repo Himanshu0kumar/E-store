@@ -44,25 +44,42 @@ export default function AddProductPage() {
 
   
   const categoryOptions = useMemo(() => {
-    return (categories || []).flatMap((category) => {
-      if (!category.subcategories || category.subcategories.length === 0) {
-        return [{ value: category._id, label: category.name }];
+    const list = [];
+    const added = new Set();
+
+    (categories || []).forEach((category) => {
+      if (category.name && !added.has(category.name.toLowerCase())) {
+        list.push({ value: category.name, label: category.name });
+        added.add(category.name.toLowerCase());
       }
-      return category.subcategories.map((sub) => ({
-        value: sub._id,
-        label: `${category.name} / ${sub.name}`,
-      }));
+      if (category.subcategories && Array.isArray(category.subcategories)) {
+        category.subcategories.forEach((sub) => {
+          if (sub.name && !added.has(sub.name.toLowerCase())) {
+            list.push({ value: sub.name, label: `${category.name} / ${sub.name}` });
+            added.add(sub.name.toLowerCase());
+          }
+        });
+      }
     });
+
+    return list;
   }, [categories]);
 
   const brandOptions = useMemo(() => {
-    return (brands || []).map((brand) => ({
-      value: brand._id,
-      label: brand.name,
-    }));
+    const list = [];
+    const added = new Set();
+
+    (brands || []).forEach((brand) => {
+      if (brand.name && !added.has(brand.name.toLowerCase())) {
+        list.push({ value: brand.name, label: brand.name });
+        added.add(brand.name.toLowerCase());
+      }
+    });
+
+    return list;
   }, [brands]);
 
-  const [form, setForm] = useState({
+  const initialFormState = {
     // Details
     name: "",
     subDescription: "",
@@ -93,65 +110,96 @@ export default function AddProductPage() {
     salePrice: "",
     priceIncludesTaxes: false,
     tax: "",
-  });
+  };
+
+  const [form, setForm] = useState(initialFormState);
 
  
   const [hasVariants, setHasVariants] = useState(false);
   const [attributes, setAttributes] = useState([]);
   const [variants, setVariants] = useState([]);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showMessage, setShowMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
  
 
   const handleCreateProduct = async () => {
-  try {
-    let imageUrls = [];
-    if (form.images.length > 0) {
-      imageUrls = await dispatch(uploadImages(form.images)).unwrap();
+    try {
+      setIsSubmitting(true);
+      setErrorMessage("");
+
+      if (!form.name.trim()) {
+        setErrorMessage("Please enter a product name.");
+        return;
+      }
+
+      let imageUrls = [];
+      if (form.images.length > 0) {
+        imageUrls = await dispatch(uploadImages(form.images)).unwrap();
+      }
+
+      const payload = {
+        name: form.name,
+        subDescription: form.subDescription,
+        description: form.content.trim() || form.subDescription.trim() || form.name.trim(),
+        images: imageUrls,
+        productCode: form.productCode,
+        productSKU: form.productSKU,
+        quantity: Number(form.quantity) || 0,
+        category: form.category,
+        brand: form.brand,
+        tags: form.tags,
+        gender: form.gender,
+        saleLabel: form.saleLabel,
+        newLabel: form.newLabel,
+        regularPrice: Number(form.regularPrice) || 0,
+        salePrice: Number(form.salePrice) || 0,
+        priceIncludesTaxes: form.priceIncludesTaxes,
+        tax: Number(form.tax) || 0,
+        hasVariants,
+        attributes: hasVariants
+          ? attributes
+              .filter((attr) => attr.name.trim() && attr.values.length > 0)
+              .map((attr) => ({ name: attr.name.trim(), values: attr.values }))
+          : [],
+        variants: hasVariants
+          ? variants
+              .filter((v) => v.enabled)
+              .map((v) => ({
+                combination: v.combination,
+                sku: v.sku,
+                price: Number(v.price) || 0,
+                salePrice: v.salePrice ? Number(v.salePrice) : undefined,
+                stock: Number(v.stock) || 0,
+              }))
+          : [],
+        publish,
+      };
+
+      await dispatch(createProduct(payload)).unwrap();
+
+      // Clear all fields
+      setForm(initialFormState);
+      setHasVariants(false);
+      setAttributes([]);
+      setVariants([]);
+      setPublish(true);
+
+      // Show success message
+      setShowMessage(true);
+      setTimeout(() => {
+        setShowMessage(false);
+      }, 3000);
+    } catch (err) {
+      const msg = typeof err === "string" ? err : err?.message || err?.error || "Failed to create product";
+      console.error("Failed to create product:", msg);
+      setErrorMessage(msg);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const payload = {
-      name: form.name,
-      subDescription: form.subDescription,
-      description: form.content,
-      images: imageUrls,
-      productCode: form.productCode,
-      productSKU: form.productSKU,
-      quantity: Number(form.quantity) || 0,
-      category: form.category,
-      brand: form.brand,
-      tags: form.tags,
-      gender: form.gender,
-      saleLabel: form.saleLabel,
-      newLabel: form.newLabel,
-      regularPrice: Number(form.regularPrice) || 0,
-      salePrice: Number(form.salePrice) || 0,
-      priceIncludesTaxes: form.priceIncludesTaxes,
-      tax: Number(form.tax) || 0,
-      hasVariants,
-      attributes: hasVariants
-        ? attributes
-            .filter((attr) => attr.name.trim() && attr.values.length > 0)
-            .map((attr) => ({ name: attr.name.trim(), values: attr.values }))
-        : [],
-      variants: hasVariants
-        ? variants
-            .filter((v) => v.enabled)
-            .map((v) => ({
-              combination: v.combination,
-              sku: v.sku,
-              price: Number(v.price) || 0,
-              salePrice: v.salePrice ? Number(v.salePrice) : undefined,
-              stock: Number(v.stock) || 0,
-            }))
-        : [],
-      publish,
-    };
-
-    await dispatch(createProduct(payload)).unwrap();
-  } catch (err) {
-    console.error("Failed to create product:", err);
-  }
-};
+  };
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -166,6 +214,22 @@ export default function AddProductPage() {
           <span>Create</span>
         </div>
       </div>
+
+      {/* SUCCESS MESSAGE */}
+      {showMessage && (
+        <div className="mb-6 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <span className="text-lg">✓</span>
+          <span>Product added successfully!</span>
+        </div>
+      )}
+
+      {/* ERROR MESSAGE */}
+      {errorMessage && (
+        <div className="mb-6 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span className="text-lg">✕</span>
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
       {/* SECTIONS */}
       <div className="space-y-5">
@@ -453,9 +517,10 @@ export default function AddProductPage() {
         <button
           type="button"
           onClick={handleCreateProduct}
-          className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+          disabled={isSubmitting}
+          className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Create product
+          {isSubmitting ? "Creating..." : "Create product"}
         </button>
       </div>
     </div>
