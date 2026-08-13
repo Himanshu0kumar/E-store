@@ -35,7 +35,7 @@ export default function AdminProductDetailsPage() {
   useEffect(() => {
     if (deleteStatus === "succeeded") {
       setShowDeleteDialog(false);
-      router.push("/dashboard/products");
+      router.push("/dashboard/products/list");
     }
   }, [deleteStatus, router]);
 

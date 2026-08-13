@@ -1,16 +1,28 @@
+import mongoose from "mongoose";
 import Cart from "@/models/Cart";
 import Product from "@/models/Product";
 
 // Get Cart
 export const getCart = async (userId) => {
   try {
-    let cart = await Cart.findOne({ userId }).populate("items.productId");
+    let cart = await Cart.findOne({ userId });
 
     if (!cart) {
       cart = await Cart.create({ userId });
+    } else {
+      let modified = false;
+      cart.items.forEach((item) => {
+        if (!item._id) {
+          item._id = new mongoose.Types.ObjectId();
+          modified = true;
+        }
+      });
+      if (modified) {
+        await cart.save();
+      }
     }
 
-    return cart;
+    return await Cart.findOne({ userId }).populate("items.productId");
   } catch (error) {
     throw new Error(error.message);
   }
@@ -57,9 +69,10 @@ export const addToCart = async (userId, productId, quantity = 1, selectedColor, 
     } else {
       // Add new item
       cart.items.push({
+        _id: new mongoose.Types.ObjectId(),
         productId,
         quantity,
-        price: product.regularPrice || product.salePrice,
+        price: product.salePrice || product.regularPrice,
         selectedColor,
         selectedSize,
       });
@@ -84,14 +97,22 @@ export const updateCartItemQuantity = async (userId, itemId, quantity) => {
       throw new Error("Cart not found");
     }
 
-    const item = cart.items.id(itemId);
+    let item = cart.items.id(itemId);
+    if (!item) {
+      item = cart.items.find(
+        (i) =>
+          i._id?.toString() === itemId ||
+          i.productId?.toString() === itemId ||
+          i.productId?._id?.toString() === itemId
+      );
+    }
     if (!item) {
       throw new Error("Item not found in cart");
     }
 
     // Validate stock
     const product = await Product.findById(item.productId);
-    if (quantity > product.quantity) {
+    if (product && quantity > product.quantity) {
       throw new Error("Requested quantity exceeds available stock");
     }
 
@@ -112,12 +133,20 @@ export const removeFromCart = async (userId, itemId) => {
       throw new Error("Cart not found");
     }
 
-    const item = cart.items.id(itemId);
+    let item = cart.items.id(itemId);
+    if (!item) {
+      item = cart.items.find(
+        (i) =>
+          i._id?.toString() === itemId ||
+          i.productId?.toString() === itemId ||
+          i.productId?._id?.toString() === itemId
+      );
+    }
     if (!item) {
       throw new Error("Item not found in cart");
     }
 
-    item.deleteOne();
+    cart.items.pull(item._id || item);
     await cart.save();
 
     return await Cart.findOne({ userId }).populate("items.productId");

@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { connectDB } from "@/lib/db";
 import { verifyToken } from "@/services/auth.service";
 import {
@@ -8,7 +9,11 @@ import {
 } from "@/services/wishlist.service";
 
 async function verifyAuth(req) {
-  const token = req.headers.get("authorization")?.split(" ")[1];
+  let token = req.headers.get("authorization")?.split(" ")[1];
+  if (!token) {
+    const cookieStore = await cookies();
+    token = cookieStore.get("accessToken")?.value;
+  }
   if (!token) {
     throw new Error("No token provided");
   }

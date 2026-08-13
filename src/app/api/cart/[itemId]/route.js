@@ -1,9 +1,14 @@
+import { cookies } from "next/headers";
 import { connectDB } from "@/lib/db";
 import { verifyToken } from "@/services/auth.service";
 import { updateCartItemQuantity, removeFromCart } from "@/services/cart.service";
 
 async function verifyAuth(req) {
-  const token = req.headers.get("authorization")?.split(" ")[1];
+  let token = req.headers.get("authorization")?.split(" ")[1];
+  if (!token) {
+    const cookieStore = await cookies();
+    token = cookieStore.get("accessToken")?.value;
+  }
   if (!token) {
     throw new Error("No token provided");
   }
@@ -16,7 +21,7 @@ export async function PUT(req, { params }) {
   try {
     await connectDB();
     const userId = await verifyAuth(req);
-    const { itemId } = params;
+    const { itemId } = await params;
     const { quantity } = await req.json();
 
     if (!quantity || quantity < 1) {
@@ -56,7 +61,7 @@ export async function DELETE(req, { params }) {
   try {
     await connectDB();
     const userId = await verifyAuth(req);
-    const { itemId } = params;
+    const { itemId } = await params;
 
     const cart = await removeFromCart(userId, itemId);
 

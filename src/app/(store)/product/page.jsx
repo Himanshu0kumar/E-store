@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "@/store/slices/productSlice";
 import { Search, SlidersHorizontal, X, PackageSearch, ChevronDown } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import Pagination from "@/components/common/Pagination";
 import ProductCard from "@/components/common/ProductCard";
 import Header from "@/components/layout/Header";
@@ -46,11 +47,14 @@ const SORT_OPTIONS = [
 
 const PAGE_SIZE = 9;
 
-export default function ProductsPage() {
+function ProductsContent() {
   const dispatch = useDispatch();
+  const searchParams = useSearchParams();
+  const searchUrlParam = searchParams.get("search");
+
   const { items: dbProducts, loading } = useSelector((state) => state.products);
 
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchUrlParam || "");
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [selectedColors, setSelectedColors] = useState([]);
@@ -61,6 +65,12 @@ export default function ProductsPage() {
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (searchUrlParam !== null) {
+      setSearchTerm(searchUrlParam);
+    }
+  }, [searchUrlParam]);
 
   // Transform and normalize products strictly from DB state
   const allProducts = useMemo(() => {
@@ -542,5 +552,19 @@ export default function ProductsPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
+          <div className="text-slate-500 text-sm">Loading products...</div>
+        </div>
+      }
+    >
+      <ProductsContent />
+    </Suspense>
   );
 }

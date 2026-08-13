@@ -3,13 +3,16 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  withCredentials: true,
 });
 
 // Add token to requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
@@ -152,13 +155,15 @@ const wishlistSlice = createSlice({
       })
       .addCase(fetchWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.items || [];
-        state.totalItems = action.payload.totalItems || 0;
-        state.totalValue = action.payload.totalValue || 0;
+        state.items = action.payload?.items || [];
+        state.totalItems = action.payload?.totalItems || state.items.length;
+        state.totalValue = action.payload?.totalValue || 0;
       })
       .addCase(fetchWishlist.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.items = [];
+        state.totalItems = 0;
       });
 
     // Add to Wishlist
@@ -169,8 +174,8 @@ const wishlistSlice = createSlice({
       })
       .addCase(addToWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.items || [];
-        state.totalItems = action.payload.totalItems || 0;
+        state.items = action.payload?.items || [];
+        state.totalItems = action.payload?.totalItems || state.items.length;
         state.success = true;
       })
       .addCase(addToWishlist.rejected, (state, action) => {
@@ -186,8 +191,8 @@ const wishlistSlice = createSlice({
       })
       .addCase(removeFromWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.items || [];
-        state.totalItems = action.payload.totalItems || 0;
+        state.items = action.payload?.items || [];
+        state.totalItems = action.payload?.totalItems || state.items.length;
         state.success = true;
       })
       .addCase(removeFromWishlist.rejected, (state, action) => {

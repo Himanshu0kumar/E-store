@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { connectDB } from "@/lib/db";
 import { verifyToken } from "@/services/auth.service";
 import {
@@ -8,7 +9,11 @@ import {
 } from "@/services/wishlist.service";
 
 async function verifyAuth(req) {
-  const token = req.headers.get("authorization")?.split(" ")[1];
+  let token = req.headers.get("authorization")?.split(" ")[1];
+  if (!token) {
+    const cookieStore = await cookies();
+    token = cookieStore.get("accessToken")?.value;
+  }
   if (!token) {
     throw new Error("No token provided");
   }
@@ -21,7 +26,7 @@ export async function PUT(req, { params }) {
   try {
     await connectDB();
     const userId = await verifyAuth(req);
-    const { itemId } = params;
+    const { itemId } = await params;
     const data = await req.json();
 
     if (data.priority) {
@@ -76,7 +81,7 @@ export async function DELETE(req, { params }) {
   try {
     await connectDB();
     const userId = await verifyAuth(req);
-    const { itemId } = params;
+    const { itemId } = await params;
 
     const wishlist = await removeFromWishlist(userId, itemId);
 

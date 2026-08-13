@@ -1,16 +1,28 @@
+import mongoose from "mongoose";
 import Wishlist from "@/models/Wishlist";
 import Product from "@/models/Product";
 
 // Get Wishlist
 export const getWishlist = async (userId) => {
   try {
-    let wishlist = await Wishlist.findOne({ userId }).populate("items.productId");
+    let wishlist = await Wishlist.findOne({ userId });
 
     if (!wishlist) {
       wishlist = await Wishlist.create({ userId });
+    } else {
+      let modified = false;
+      wishlist.items.forEach((item) => {
+        if (!item._id) {
+          item._id = new mongoose.Types.ObjectId();
+          modified = true;
+        }
+      });
+      if (modified) {
+        await wishlist.save();
+      }
     }
 
-    return wishlist;
+    return await Wishlist.findOne({ userId }).populate("items.productId");
   } catch (error) {
     throw new Error(error.message);
   }
@@ -42,6 +54,7 @@ export const addToWishlist = async (userId, productId, priority = "medium") => {
 
     // Add to wishlist
     wishlist.items.push({
+      _id: new mongoose.Types.ObjectId(),
       productId,
       priority,
     });
@@ -61,12 +74,20 @@ export const removeFromWishlist = async (userId, itemId) => {
       throw new Error("Wishlist not found");
     }
 
-    const item = wishlist.items.id(itemId);
+    let item = wishlist.items.id(itemId);
+    if (!item) {
+      item = wishlist.items.find(
+        (i) =>
+          i._id?.toString() === itemId ||
+          i.productId?.toString() === itemId ||
+          i.productId?._id?.toString() === itemId
+      );
+    }
     if (!item) {
       throw new Error("Item not found in wishlist");
     }
 
-    item.deleteOne();
+    wishlist.items.pull(item._id || item);
     await wishlist.save();
 
     return await Wishlist.findOne({ userId }).populate("items.productId");

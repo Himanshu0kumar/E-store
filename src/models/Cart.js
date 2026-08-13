@@ -1,5 +1,33 @@
 import mongoose from "mongoose";
 
+const cartItemSchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: () => new mongoose.Types.ObjectId(),
+  },
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+    required: true,
+  },
+  quantity: {
+    type: Number,
+    required: true,
+    min: 1,
+    default: 1,
+  },
+  price: {
+    type: Number,
+    required: true,
+  },
+  selectedColor: String,
+  selectedSize: String,
+  addedAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 const cartSchema = new mongoose.Schema(
   {
     userId: {
@@ -8,32 +36,7 @@ const cartSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    items: [
-      {
-        _id: mongoose.Schema.Types.ObjectId,
-        productId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Product",
-          required: true,
-        },
-        quantity: {
-          type: Number,
-          required: true,
-          min: 1,
-          default: 1,
-        },
-        price: {
-          type: Number,
-          required: true,
-        },
-        selectedColor: String,
-        selectedSize: String,
-        addedAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    items: [cartItemSchema],
 
     // Cart Summary
     subtotal: { type: Number, default: 0 },

@@ -3,13 +3,16 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  withCredentials: true,
 });
 
 // Add token to requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
@@ -149,18 +152,20 @@ const cartSlice = createSlice({
       })
       .addCase(fetchCart.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.items || [];
-        state.subtotal = action.payload.subtotal || 0;
-        state.tax = action.payload.tax || 0;
-        state.shipping = action.payload.shipping || 0;
-        state.discount = action.payload.discount || 0;
-        state.total = action.payload.total || 0;
-        state.couponCode = action.payload.couponCode || null;
-        state.itemCount = action.payload.items?.length || 0;
+        state.items = action.payload?.items || [];
+        state.subtotal = action.payload?.subtotal || 0;
+        state.tax = action.payload?.tax || 0;
+        state.shipping = action.payload?.shipping || 0;
+        state.discount = action.payload?.discount || 0;
+        state.total = action.payload?.total || 0;
+        state.couponCode = action.payload?.couponCode || null;
+        state.itemCount = action.payload?.items?.length || state.items.length;
       })
       .addCase(fetchCart.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.items = [];
+        state.itemCount = 0;
       });
 
     // Add to Cart
@@ -171,11 +176,11 @@ const cartSlice = createSlice({
       })
       .addCase(addToCart.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.items || [];
-        state.subtotal = action.payload.subtotal || 0;
-        state.tax = action.payload.tax || 0;
-        state.total = action.payload.total || 0;
-        state.itemCount = action.payload.items?.length || 0;
+        state.items = action.payload?.items || [];
+        state.subtotal = action.payload?.subtotal || 0;
+        state.tax = action.payload?.tax || 0;
+        state.total = action.payload?.total || 0;
+        state.itemCount = action.payload?.items?.length || state.items.length;
         state.success = true;
       })
       .addCase(addToCart.rejected, (state, action) => {

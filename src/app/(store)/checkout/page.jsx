@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
 import {
   CreditCard,
   Truck,
@@ -12,17 +13,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-
-// ----------------------------------------------------------------
-// Mock order contents — mirror whatever the cart page ends up
-// passing along (via your real cart state/API) instead of this
-// hardcoded array.
-// ----------------------------------------------------------------
-const ORDER_ITEMS = [
-  { id: 1, name: "Classic Crewneck Tee", variant: "Black / M", price: 28.0, quantity: 2 },
-  { id: 4, name: "Everyday Sneakers", variant: "White / 9", price: 74.99, quantity: 1 },
-  { id: 8, name: "Minimalist Watch", variant: "Silver", price: 129.0, quantity: 1 },
-];
+import { fetchCart } from "@/store/slices/cartSlice";
 
 const SHIPPING_FLAT_RATE = 6.99;
 const FREE_SHIPPING_THRESHOLD = 100;
@@ -32,6 +23,38 @@ const STEPS = ["Information", "Shipping", "Payment"];
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const cartState = useSelector((state) => state.cart || {});
+  const cartItemsRaw = cartState.items || [];
+
+  useEffect(() => {
+    dispatch(fetchCart());
+  }, [dispatch]);
+
+  const orderItems = useMemo(() => {
+    return cartItemsRaw.map((item) => {
+      const product =
+        typeof item.productId === "object" && item.productId !== null
+          ? item.productId
+          : {};
+      const name = product.name || item.name || "Product Item";
+      const price = item.price ?? product.salePrice ?? product.regularPrice ?? 0;
+      const variantParts = [item.selectedColor, item.selectedSize].filter(Boolean);
+      const variant =
+        variantParts.length > 0
+          ? variantParts.join(" / ")
+          : product.category || "Standard";
+
+      return {
+        id: item._id,
+        name,
+        variant,
+        price,
+        quantity: item.quantity || 1,
+      };
+    });
+  }, [cartItemsRaw]);
+
   const [currentStep, setCurrentStep] = useState(0);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -55,8 +78,8 @@ export default function CheckoutPage() {
   });
 
   const subtotal = useMemo(
-    () => ORDER_ITEMS.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    []
+    () => orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [orderItems]
   );
   const shippingCost =
     shippingMethod === "express"
@@ -492,7 +515,7 @@ export default function CheckoutPage() {
                 Order Summary
               </h2>
               <div className="space-y-3 mb-4">
-                {ORDER_ITEMS.map((item) => (
+                {orderItems.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
                     <div className="text-slate-600">
                       <p className="font-medium text-slate-900">{item.name}</p>

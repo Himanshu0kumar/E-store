@@ -11,6 +11,8 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { fetchProductById } from "@/store/slices/productSlice";
+import { addToCart } from "@/store/slices/cartSlice";
+import { addToWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice";
 import ProductDetailsView from "@/components/ui/ProductDetailsView";
 
 export default function ProductDetailPage() {
@@ -24,6 +26,7 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedImage, setSelectedImage] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   // Fetch product on mount
   useEffect(() => {
@@ -43,6 +46,41 @@ export default function ProductDetailPage() {
       }
     }
   }, [selectedProduct]);
+
+  const handleAddToCart = async () => {
+    if (!selectedProduct) return;
+    const pid = selectedProduct._id || selectedProduct.id;
+    try {
+      await dispatch(
+        addToCart({
+          productId: pid,
+          quantity,
+          selectedColor,
+          selectedSize,
+        })
+      );
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 2000);
+    } catch (err) {
+      console.error("Failed to add to cart:", err);
+    }
+  };
+
+  const handleWishlistToggle = async () => {
+    if (!selectedProduct) return;
+    const pid = selectedProduct._id || selectedProduct.id;
+    const nextState = !isWishlisted;
+    setIsWishlisted(nextState);
+    try {
+      if (nextState) {
+        await dispatch(addToWishlist({ productId: pid }));
+      } else {
+        await dispatch(removeFromWishlist(pid));
+      }
+    } catch (err) {
+      console.error("Failed to update wishlist:", err);
+    }
+  };
 
   if (loading) {
     return (
@@ -133,15 +171,24 @@ export default function ProductDetailPage() {
           <div className="space-y-6">
             {/* Quick Actions */}
             <div className="flex gap-3">
-              <button className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-white transition hover:bg-emerald-600">
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white transition ${
+                  addedToCart
+                    ? "bg-emerald-700"
+                    : "bg-emerald-500 hover:bg-emerald-600"
+                }`}
+              >
                 <ShoppingCart size={20} />
-                Add to Cart
+                {addedToCart ? "Added to Cart!" : "Add to Cart"}
               </button>
               <button
-                onClick={() => setIsWishlisted(!isWishlisted)}
+                type="button"
+                onClick={handleWishlistToggle}
                 className={`rounded-xl border-2 px-6 py-3 font-semibold transition ${
                   isWishlisted
-                    ? "border-red-500 bg-red-50 text-red-600"
+                    ? "border-rose-500 bg-rose-50 text-rose-600"
                     : "border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
               >

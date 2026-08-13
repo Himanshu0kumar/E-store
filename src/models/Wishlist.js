@@ -1,5 +1,27 @@
 import mongoose from "mongoose";
 
+const wishlistItemSchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: () => new mongoose.Types.ObjectId(),
+  },
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+    required: true,
+  },
+  addedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  priority: {
+    type: String,
+    enum: ["high", "medium", "low"],
+    default: "medium",
+  },
+  note: String,
+});
+
 const wishlistSchema = new mongoose.Schema(
   {
     userId: {
@@ -8,26 +30,7 @@ const wishlistSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    items: [
-      {
-        _id: mongoose.Schema.Types.ObjectId,
-        productId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Product",
-          required: true,
-        },
-        addedAt: {
-          type: Date,
-          default: Date.now,
-        },
-        priority: {
-          type: String,
-          enum: ["high", "medium", "low"],
-          default: "medium",
-        },
-        note: String,
-      },
-    ],
+    items: [wishlistItemSchema],
 
     
     name: {
