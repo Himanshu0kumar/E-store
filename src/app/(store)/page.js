@@ -1,7 +1,7 @@
 "use client";
 
-import ProductsPage from "./product/page";
+import HomePage from "../page";
 
-export default function HomePage() {
-  return <ProductsPage />;
+export default function StoreHomePage() {
+  return <HomePage />;
 }
