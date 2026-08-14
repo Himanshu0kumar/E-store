@@ -45,11 +45,12 @@ export const addToWishlist = async (userId, productId, priority = "medium") => {
 
     // Check if product already in wishlist
     const existingItem = wishlist.items.find(
-      (item) => item.productId.toString() === productId
+      (item) => item.productId?.toString() === productId
     );
 
     if (existingItem) {
-      throw new Error("Product already in wishlist");
+      const populated = await Wishlist.findOne({ userId }).populate("items.productId");
+      return { wishlist: populated, alreadyExists: true };
     }
 
     // Add to wishlist
@@ -60,7 +61,8 @@ export const addToWishlist = async (userId, productId, priority = "medium") => {
     });
 
     await wishlist.save();
-    return await Wishlist.findOne({ userId }).populate("items.productId");
+    const populated = await Wishlist.findOne({ userId }).populate("items.productId");
+    return { wishlist: populated, alreadyExists: false };
   } catch (error) {
     throw new Error(error.message);
   }

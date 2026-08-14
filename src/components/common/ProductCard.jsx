@@ -3,19 +3,38 @@
 import { useState } from "react";
 import { Heart, Star, ShoppingBag, Check } from "lucide-react";
 import Link from "next/link";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "@/store/slices/cartSlice";
 import { addToWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice";
+import Toast from "@/components/ui/Toast";
 
 export default function ProductCard({ product }) {
   const dispatch = useDispatch();
+  const { items: wishlistItems = [] } = useSelector((state) => state.wishlist || {});
+  const { items: cartItems = [] } = useSelector((state) => state.cart || {});
   const [added, setAdded] = useState(false);
-  const [wishlisted, setWishlisted] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [toast, setToast] = useState(null);
 
   if (!product) return null;
 
   const productId = product._id || product.id;
+  const isWishlisted = Boolean(
+    wishlistItems &&
+      wishlistItems.some((item) => {
+        const itemPid = item.productId?._id || item.productId || item._id;
+        return String(itemPid) === String(productId);
+      })
+  );
+
+  const isInCart = Boolean(
+    cartItems &&
+      cartItems.some((item) => {
+        const itemPid = item.productId?._id || item.productId || item.product?._id || item.product?.id || item._id;
+        return String(itemPid) === String(productId);
+      })
+  );
+
   const image =
     product.image ||
     (Array.isArray(product.images) && product.images.length > 0
@@ -78,13 +97,24 @@ export default function ProductCard({ product }) {
     e.stopPropagation();
     if (isAdding) return;
 
+    if (isInCart) {
+      setToast({ message: "This product is already in your cart!", type: "cart_exists" });
+      return;
+    }
+
     setIsAdding(true);
     try {
-      await dispatch(addToCart({ productId, quantity: 1 }));
+      const res = await dispatch(addToCart({ productId, quantity: 1 })).unwrap();
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
+      if (res?.alreadyExists) {
+        setToast({ message: "Item quantity updated in cart!", type: "cart_update" });
+      } else {
+        setToast({ message: "Product added to cart successfully!", type: "cart_add" });
+      }
     } catch (err) {
       console.error("Failed to add to cart:", err);
+      setToast({ message: typeof err === "string" ? err : "Failed to add product to cart.", type: "error" });
     } finally {
       setIsAdding(false);
     }
@@ -94,22 +124,33 @@ export default function ProductCard({ product }) {
     e.preventDefault();
     e.stopPropagation();
 
-    const nextState = !wishlisted;
-    setWishlisted(nextState);
-
     try {
-      if (nextState) {
-        await dispatch(addToWishlist({ productId }));
+      if (!isWishlisted) {
+        const res = await dispatch(addToWishlist({ productId })).unwrap();
+        if (res?.alreadyExists) {
+          setToast({ message: "Product is already in your wishlist!", type: "wishlist_exists" });
+        } else {
+          setToast({ message: "Product added to wishlist successfully!", type: "wishlist_add" });
+        }
       } else {
-        await dispatch(removeFromWishlist(productId));
+        await dispatch(removeFromWishlist(productId)).unwrap();
+        setToast({ message: "Product removed from your wishlist!", type: "wishlist_remove" });
       }
     } catch (err) {
       console.error("Failed to update wishlist:", err);
+      setToast({ message: typeof err === "string" ? err : "Failed to update wishlist.", type: "error" });
     }
   };
 
   const cardContent = (
-    <div className="group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition flex flex-col justify-between h-full">
+    <div className="group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition flex flex-col justify-between h-full relative">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
       <div>
         <div className="relative aspect-square bg-slate-50 overflow-hidden">
           <img
@@ -119,13 +160,13 @@ export default function ProductCard({ product }) {
           />
           <button
             type="button"
-            aria-label="Add to wishlist"
+            aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
             onClick={handleWishlistToggle}
             className={`absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center transition shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-              wishlisted ? "text-rose-600 bg-rose-50" : "text-slate-400 hover:text-rose-600"
+              isWishlisted ? "text-rose-600 bg-rose-50" : "text-slate-400 hover:text-rose-600"
             }`}
           >
-            <Heart className={`w-4 h-4 ${wishlisted ? "fill-rose-600 text-rose-600" : ""}`} />
+            <Heart className={`w-4 h-4 ${isWishlisted ? "fill-rose-600 text-rose-600" : ""}`} />
           </button>
           {discountPercent > 0 && (
             <span className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-rose-600 text-white text-xs font-semibold">
@@ -191,12 +232,12 @@ export default function ProductCard({ product }) {
           disabled={isAdding}
           onClick={handleAddToCart}
           className={`w-full mt-4 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-            added
+            isInCart || added
               ? "bg-emerald-700 text-white"
               : "bg-emerald-600 hover:bg-emerald-700 text-white"
           }`}
         >
-          {added ? (
+          {isInCart || added ? (
             <>
               <Check className="w-4 h-4" /> Added to Cart
             </>

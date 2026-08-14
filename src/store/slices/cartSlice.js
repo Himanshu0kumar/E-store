@@ -41,7 +41,7 @@ export const addToCart = createAsyncThunk(
         selectedColor,
         selectedSize,
       });
-      return response.data.data;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Failed to add to cart");
     }
@@ -54,7 +54,7 @@ export const updateCartItem = createAsyncThunk(
   async ({ itemId, quantity }, { rejectWithValue }) => {
     try {
       const response = await api.put(`/api/cart/${itemId}`, { quantity });
-      return response.data.data;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Failed to update cart");
     }
@@ -67,7 +67,7 @@ export const removeFromCart = createAsyncThunk(
   async (itemId, { rejectWithValue }) => {
     try {
       const response = await api.delete(`/api/cart/${itemId}`);
-      return response.data.data;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Failed to remove item");
     }
@@ -176,12 +176,15 @@ const cartSlice = createSlice({
       })
       .addCase(addToCart.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload?.items || [];
-        state.subtotal = action.payload?.subtotal || 0;
-        state.tax = action.payload?.tax || 0;
-        state.total = action.payload?.total || 0;
-        state.itemCount = action.payload?.items?.length || state.items.length;
+        const cart = action.payload?.data || action.payload;
+        state.items = cart?.items || [];
+        state.subtotal = cart?.subtotal || 0;
+        state.tax = cart?.tax || 0;
+        state.total = cart?.total || 0;
+        state.itemCount = cart?.items?.length || state.items.length;
         state.success = true;
+        state.lastActionMessage = action.payload?.message || "Item added to cart";
+        state.alreadyExists = Boolean(action.payload?.alreadyExists);
       })
       .addCase(addToCart.rejected, (state, action) => {
         state.loading = false;
@@ -196,11 +199,14 @@ const cartSlice = createSlice({
       })
       .addCase(updateCartItem.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.items || [];
-        state.subtotal = action.payload.subtotal || 0;
-        state.tax = action.payload.tax || 0;
-        state.total = action.payload.total || 0;
+        const cart = action.payload?.data || action.payload;
+        state.items = cart?.items || [];
+        state.subtotal = cart?.subtotal || 0;
+        state.tax = cart?.tax || 0;
+        state.total = cart?.total || 0;
+        state.itemCount = cart?.items?.length || state.items.length;
         state.success = true;
+        state.lastActionMessage = action.payload?.message || "Cart updated";
       })
       .addCase(updateCartItem.rejected, (state, action) => {
         state.loading = false;
@@ -215,12 +221,14 @@ const cartSlice = createSlice({
       })
       .addCase(removeFromCart.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.items || [];
-        state.subtotal = action.payload.subtotal || 0;
-        state.tax = action.payload.tax || 0;
-        state.total = action.payload.total || 0;
-        state.itemCount = action.payload.items?.length || 0;
+        const cart = action.payload?.data || action.payload;
+        state.items = cart?.items || [];
+        state.subtotal = cart?.subtotal || 0;
+        state.tax = cart?.tax || 0;
+        state.total = cart?.total || 0;
+        state.itemCount = cart?.items?.length || 0;
         state.success = true;
+        state.lastActionMessage = action.payload?.message || "Item removed from cart";
       })
       .addCase(removeFromCart.rejected, (state, action) => {
         state.loading = false;

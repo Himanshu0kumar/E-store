@@ -68,21 +68,26 @@ export async function POST(req) {
       );
     }
 
-    const cart = await addToCart(
+    const result = await addToCart(
       userId,
       productId,
       quantity || 1,
       selectedColor,
       selectedSize
     );
+    const cartData = result?.cart || result;
+    const alreadyExists = Boolean(result?.alreadyExists);
 
     return Response.json(
       {
         success: true,
-        data: cart,
-        message: "Item added to cart",
+        data: cartData,
+        message: alreadyExists
+          ? "Item quantity updated in cart"
+          : "Item added to cart successfully",
+        alreadyExists,
       },
-      { status: 201 }
+      { status: 200 }
     );
   } catch (error) {
     console.error("Add to cart error:", error);

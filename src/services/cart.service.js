@@ -79,7 +79,8 @@ export const addToCart = async (userId, productId, quantity = 1, selectedColor, 
     }
 
     await cart.save();
-    return await Cart.findOne({ userId }).populate("items.productId");
+    const populated = await Cart.findOne({ userId }).populate("items.productId");
+    return { cart: populated, alreadyExists: Boolean(existingItem) };
   } catch (error) {
     throw new Error(error.message);
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { Heart, ShoppingCart, Trash2, Star, Check, Loader2 } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -8,11 +9,14 @@ import Footer from "@/components/layout/Footer";
 import { fetchWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice";
 import { addToCart } from "@/store/slices/cartSlice";
 
+import Toast from "@/components/ui/Toast";
+
 export default function WishlistPage() {
   const dispatch = useDispatch();
   const { items = [], loading } = useSelector((state) => state.wishlist || {});
   const [addingCartId, setAddingCartId] = useState(null);
   const [addedCartIds, setAddedCartIds] = useState([]);
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     dispatch(fetchWishlist());
@@ -54,9 +58,15 @@ export default function WishlistPage() {
     });
   }, [items]);
 
-  const handleRemove = (itemId) => {
+  const handleRemove = async (itemId) => {
     if (!itemId) return;
-    dispatch(removeFromWishlist(itemId));
+    try {
+      await dispatch(removeFromWishlist(itemId)).unwrap();
+      setToast({ message: "Product removed from your wishlist!", type: "wishlist_remove" });
+    } catch (err) {
+      console.error("Failed to remove item:", err);
+      setToast({ message: "Failed to remove item from wishlist.", type: "error" });
+    }
   };
 
   const handleAddToCart = async (product) => {
@@ -78,6 +88,13 @@ export default function WishlistPage() {
   return (
     <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
       <Header />
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
 
       <div className="border-b border-slate-200 bg-white">
         <div className="max-w-6xl mx-auto px-4 py-8">
@@ -105,14 +122,14 @@ export default function WishlistPage() {
               Your wishlist is empty
             </h3>
             <p className="text-slate-500 text-sm mb-6">
-              Save items you love while you browse — they'll show up here.
+              Save items you love while you browse &mdash; they&apos;ll show up here.
             </p>
-            <a
+            <Link
               href="/product"
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition text-sm"
             >
               Explore Products
-            </a>
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

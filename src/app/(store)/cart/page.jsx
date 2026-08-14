@@ -13,6 +13,8 @@ import {
   applyCoupon,
 } from "@/store/slices/cartSlice";
 
+import Toast from "@/components/ui/Toast";
+
 const FREE_SHIPPING_THRESHOLD = 100;
 const SHIPPING_FLAT_RATE = 6.99;
 const TAX_RATE = 0.08;
@@ -35,6 +37,7 @@ export default function CartPage() {
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [promoError, setPromoError] = useState("");
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     dispatch(fetchCart());
@@ -86,16 +89,28 @@ export default function CartPage() {
     });
   }, [items]);
 
-  const updateQuantity = (itemId, delta, currentQty) => {
+  const updateQuantity = async (itemId, delta, currentQty) => {
     if (!itemId) return;
     const newQty = currentQty + delta;
     if (newQty < 1) return;
-    dispatch(updateCartItem({ itemId, quantity: newQty }));
+    try {
+      await dispatch(updateCartItem({ itemId, quantity: newQty })).unwrap();
+      setToast({ message: "Cart quantity updated!", type: "cart_update" });
+    } catch (err) {
+      console.error("Failed to update quantity:", err);
+      setToast({ message: typeof err === "string" ? err : "Failed to update quantity.", type: "error" });
+    }
   };
 
-  const removeItem = (itemId) => {
+  const removeItem = async (itemId) => {
     if (!itemId) return;
-    dispatch(removeFromCart(itemId));
+    try {
+      await dispatch(removeFromCart(itemId)).unwrap();
+      setToast({ message: "Product removed from your cart!", type: "cart_remove" });
+    } catch (err) {
+      console.error("Failed to remove item from cart:", err);
+      setToast({ message: "Failed to remove item from cart.", type: "error" });
+    }
   };
 
   const applyPromoCodeHandler = (e) => {
@@ -107,9 +122,11 @@ export default function CartPage() {
       .then(() => {
         setAppliedPromo({ code: promoCode.trim(), percentOff: 10 });
         setPromoError("");
+        setToast({ message: "Promo code applied successfully!", type: "success" });
       })
       .catch((err) => {
         setPromoError(err || "Invalid promo code");
+        setToast({ message: typeof err === "string" ? err : "Invalid promo code", type: "error" });
       });
   };
 
@@ -140,6 +157,13 @@ export default function CartPage() {
   return (
     <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
       <Header />
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
 
       <div className="border-b border-slate-200 bg-white">
         <div className="max-w-6xl mx-auto px-4 py-8">

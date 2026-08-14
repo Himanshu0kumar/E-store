@@ -39,7 +39,7 @@ export const addToWishlist = createAsyncThunk(
         productId,
         priority,
       });
-      return response.data.data;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Failed to add to wishlist");
     }
@@ -52,7 +52,7 @@ export const removeFromWishlist = createAsyncThunk(
   async (itemId, { rejectWithValue }) => {
     try {
       const response = await api.delete(`/api/wishlist/${itemId}`);
-      return response.data.data;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || "Failed to remove item");
     }
@@ -174,9 +174,12 @@ const wishlistSlice = createSlice({
       })
       .addCase(addToWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload?.items || [];
-        state.totalItems = action.payload?.totalItems || state.items.length;
+        const wishlist = action.payload?.data || action.payload;
+        state.items = wishlist?.items || [];
+        state.totalItems = wishlist?.totalItems || state.items.length;
         state.success = true;
+        state.lastActionMessage = action.payload?.message || "Wishlist updated";
+        state.alreadyExists = Boolean(action.payload?.alreadyExists);
       })
       .addCase(addToWishlist.rejected, (state, action) => {
         state.loading = false;
@@ -191,9 +194,12 @@ const wishlistSlice = createSlice({
       })
       .addCase(removeFromWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload?.items || [];
-        state.totalItems = action.payload?.totalItems || state.items.length;
+        const wishlist = action.payload?.data || action.payload;
+        state.items = wishlist?.items || [];
+        state.totalItems = wishlist?.totalItems || state.items.length;
         state.success = true;
+        state.lastActionMessage = action.payload?.message || "Item removed from wishlist";
+        state.alreadyExists = false;
       })
       .addCase(removeFromWishlist.rejected, (state, action) => {
         state.loading = false;

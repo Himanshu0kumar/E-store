@@ -65,15 +65,20 @@ export async function POST(req) {
       );
     }
 
-    const wishlist = await addToWishlist(userId, productId, priority || "medium");
+    const result = await addToWishlist(userId, productId, priority || "medium");
+    const wishlistData = result?.wishlist || result;
+    const alreadyExists = Boolean(result?.alreadyExists);
 
     return Response.json(
       {
         success: true,
-        data: wishlist,
-        message: "Item added to wishlist",
+        data: wishlistData,
+        message: alreadyExists
+          ? "Product is already in your wishlist"
+          : "Item added to wishlist",
+        alreadyExists,
       },
-      { status: 201 }
+      { status: 200 }
     );
   } catch (error) {
     console.error("Add to wishlist error:", error);
