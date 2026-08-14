@@ -1,244 +1,356 @@
 "use client";
 
-import { useParams, notFound } from "next/navigation";
-import { Calendar, Clock, ArrowLeft, Share2 } from "lucide-react";
+import { useEffect, useState, use } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchBlogPostBySlug, clearCurrentPost } from "@/store/slices/blogSlice";
+import {
+  Calendar,
+  Clock,
+  ArrowLeft,
+  Share2,
+  Eye,
+  User,
+  Flame,
+  ChevronRight,
+} from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import Link from "next/link";
 
-// ----------------------------------------------------------------
-// Same mock data as the blog listing page. In a real app this
-// would live in one shared file (or come from your CMS/API) so
-// the listing and detail pages never drift out of sync.
-// ----------------------------------------------------------------
-const BLOG_POSTS = [
-  {
-    slug: "how-to-choose-the-right-size",
-    title: "How to Choose the Right Size Every Time",
-    excerpt: "Our sizing charts explained, plus a few tricks for measuring yourself accurately at home.",
-    category: "Guides",
-    author: "Maya Chen",
-    authorRole: "Head of Product",
-    date: "2026-07-12",
-    readMinutes: 6,
-    image: "https://picsum.photos/seed/blog-1/1200/600",
-    content: [
-      "Getting the right size on the first try saves everyone time — you skip the exchange, and we skip the extra shipping. Here's the short version of how our sizing actually works.",
-      "Every product page includes a size chart specific to that item, not a generic one for the whole site. Fit varies enough between a fitted tee and a relaxed hoodie that a single chart never tells the full story.",
-      "If you're between two sizes, our general rule is: size up for anything you want to layer, size down for anything meant to sit close to the body. When in doubt, check the garment's chest and length measurements against something you already own that fits well.",
-      "For footwear specifically, we recommend measuring your foot in the evening — feet swell slightly over the course of a day, and evening measurements tend to be the most reliable for all-day comfort.",
-      "Still unsure? Reach out before you order — our support team would rather answer a sizing question upfront than process a return afterward.",
-    ],
-  },
-  {
-    slug: "inside-our-supply-chain",
-    title: "Inside Our Supply Chain: Where Everything Comes From",
-    excerpt: "A transparent look at the factories and materials behind every product we sell.",
-    category: "Sustainability",
-    author: "Daniel Ruiz",
-    authorRole: "Operations Lead",
-    date: "2026-06-28",
-    readMinutes: 8,
-    image: "https://picsum.photos/seed/blog-2/1200/600",
-    content: [
-      "We get asked fairly often where our products actually come from, so here's the honest, unglamorous answer.",
-      "We work with a small number of manufacturing partners, most of whom we've worked with for over five years. We visit in person at least once a year — not as a photo opportunity, but to actually walk the floor.",
-      "Materials are sourced with a preference for traceable origins over the cheapest available option. That sometimes means a higher cost, which we try to absorb rather than pass entirely onto you.",
-      "None of this makes us perfect — there's always more to improve. But we'd rather be transparent about where we are today than make promises we can't back up.",
-    ],
-  },
-  {
-    slug: "new-arrivals-summer-2026",
-    title: "What's New This Summer",
-    excerpt: "A first look at the pieces we're most excited about this season.",
-    category: "Product",
-    author: "Priya Nair",
-    authorRole: "Merchandising Lead",
-    date: "2026-06-15",
-    readMinutes: 4,
-    image: "https://picsum.photos/seed/blog-3/1200/600",
-    content: [
-      "Summer's lineup leans lighter — literally. We've reworked a few core styles in breathable linen blends that hold their shape better than typical summer fabrics.",
-      "A few favorites from the team: the relaxed short-sleeve shirt (finally, one that doesn't wrinkle after twenty minutes), and a lightweight version of last year's popular trail sneaker.",
-      "Everything in this drop is available now, in limited quantities per size — we intentionally keep summer runs smaller.",
-    ],
-  },
-  {
-    slug: "caring-for-natural-fabrics",
-    title: "Caring for Natural Fabrics: A Practical Guide",
-    excerpt: "Wool, linen, and cotton all want different things from you. Here's how to keep each looking new.",
-    category: "Guides",
-    author: "Maya Chen",
-    authorRole: "Head of Product",
-    date: "2026-05-30",
-    readMinutes: 7,
-    image: "https://picsum.photos/seed/blog-4/1200/600",
-    content: [
-      "Natural fabrics reward a little extra care, and punish neglect more visibly than synthetics do. Here's the fabric-by-fabric breakdown.",
-      "Wool: wash cold, on a wool or hand-wash cycle, and always lay flat to dry. Hanging a wet wool sweater will stretch it out permanently.",
-      "Linen: gets softer with every wash, so don't be precious with it. It wrinkles by nature — that's not a flaw, it's the fabric doing what linen does.",
-      "Cotton: shrinks most in the first wash, so if a cotton piece fits perfectly out of the box, wash it cold and expect a very slight change after wash one.",
-    ],
-  },
-  {
-    slug: "our-packaging-overhaul",
-    title: "Why We Redesigned Our Packaging",
-    excerpt: "Cutting plastic by 80% without cutting corners on protecting your order in transit.",
-    category: "Sustainability",
-    author: "Daniel Ruiz",
-    authorRole: "Operations Lead",
-    date: "2026-05-18",
-    readMinutes: 5,
-    image: "https://picsum.photos/seed/blog-5/1200/600",
-    content: [
-      "Our old packaging worked fine — it just used a lot more plastic than it needed to. This year we redesigned it from scratch.",
-      "The new mailers are made from recycled paper stock with a compostable liner, replacing the plastic poly bags we used previously.",
-      "The tradeoff: paper mailers cost slightly more per unit than plastic ones did. We decided that was worth it.",
-    ],
-  },
-  {
-    slug: "meet-the-team-behind-the-brand",
-    title: "Meet the Team Behind the Brand",
-    excerpt: "Five people, one warehouse, and a shared obsession with getting the details right.",
-    category: "Company",
-    author: "Priya Nair",
-    authorRole: "Merchandising Lead",
-    date: "2026-04-22",
-    readMinutes: 9,
-    image: "https://picsum.photos/seed/blog-6/1200/600",
-    content: [
-      "We're a small team, which means most of us wear several hats. Here's a quick introduction to the people behind the brand.",
-      "Maya leads product and sizing — if you've ever emailed us about fit, there's a good chance she saw your message.",
-      "Daniel runs operations, from our manufacturing relationships to packaging decisions like the one above.",
-      "The rest of the team rotates through support, photography, and everything in between. Small team, a lot of coffee.",
-    ],
-  },
-  {
-    slug: "return-policy-explained",
-    title: "Our Return Policy, Explained Simply",
-    excerpt: "No hidden fine print — here's exactly how returns and exchanges work.",
-    category: "Guides",
-    author: "Maya Chen",
-    authorRole: "Head of Product",
-    date: "2026-04-03",
-    readMinutes: 3,
-    image: "https://picsum.photos/seed/blog-7/1200/600",
-    content: [
-      "Returns are free within 30 days of delivery, on unworn items with tags attached. That's really it — no restocking fee, no store-credit-only fine print.",
-      "To start one, use the return link in your order confirmation email. A prepaid label is generated automatically.",
-      "Refunds land back on your original payment method within 5–7 business days of us receiving the item.",
-    ],
-  },
-];
-
-const formatDate = (isoDate) =>
-  new Date(isoDate).toLocaleDateString("en-US", {
-    month: "long",
+const formatDate = (isoDate) => {
+  if (!isoDate) return "";
+  return new Date(isoDate).toLocaleDateString("en-US", {
+    month: "short",
     day: "numeric",
     year: "numeric",
   });
+};
 
-export default function BlogDetailPage() {
-  const params = useParams();
-  const post = BLOG_POSTS.find((p) => p.slug === params.slug);
+export default function BlogDetailPage({ params }) {
+  const resolvedParams = use(params);
+  const { slug } = resolvedParams;
 
-  if (!post) {
-    notFound();
+  const dispatch = useDispatch();
+  const {
+    currentPost: post,
+    relatedPosts,
+    popularPosts,
+    detailLoading,
+    error,
+  } = useSelector((state) => state.blog);
+
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (slug) {
+      dispatch(fetchBlogPostBySlug(slug));
+    }
+    return () => {
+      dispatch(clearCurrentPost());
+    };
+  }, [dispatch, slug]);
+
+  const handleShare = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    if (newsletterEmail) {
+      setSubscribed(true);
+      setNewsletterEmail("");
+      setTimeout(() => setSubscribed(false), 4000);
+    }
+  };
+
+  if (detailLoading) {
+    return (
+      <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
+        <Header />
+        <div className="max-w-6xl mx-auto px-4 py-24 flex-1 text-center text-slate-400 text-sm">
+          Loading article...
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
-  const relatedPosts = BLOG_POSTS.filter(
-    (p) => p.category === post.category && p.slug !== post.slug
-  ).slice(0, 3);
+  if (error || !post) {
+    return (
+      <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
+        <Header />
+        <div className="max-w-4xl mx-auto px-4 py-24 flex-1 text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">
+            Article Not Found
+          </h2>
+          <p className="text-slate-500 text-sm mb-6">
+            The article you are looking for might have been moved or removed.
+          </p>
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-medium text-xs hover:bg-emerald-700 transition shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Journal
+          </Link>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
       <Header />
 
-      <div className="max-w-3xl mx-auto px-4 py-10 flex-1 w-full">
-        <a
-          href="/blog"
-          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-emerald-600 transition mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Journal
-        </a>
+      {/* Top Banner / Breadcrumb area */}
+      <div className="bg-white border-b border-slate-200/80">
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-emerald-600 transition mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Journal
+          </Link>
 
-        <span className="inline-block px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium mb-3">
-          {post.category}
-        </span>
-
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-tight">
-          {post.title}
-        </h1>
-
-        <div className="flex flex-wrap items-center gap-4 mt-5 text-sm text-slate-500">
-          <span className="flex items-center gap-1.5">
-            <Calendar className="w-4 h-4" />
-            {formatDate(post.date)}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Clock className="w-4 h-4" />
-            {post.readMinutes} min read
-          </span>
-          <button className="flex items-center gap-1.5 hover:text-emerald-600 transition ml-auto">
-            <Share2 className="w-4 h-4" />
-            Share
-          </button>
-        </div>
-
-        <div className="rounded-2xl overflow-hidden mt-6 aspect-video bg-slate-100">
-          <img
-            src={post.image}
-            alt={post.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Article body */}
-        <div className="mt-8 space-y-5">
-          {post.content.map((paragraph, idx) => (
-            <p key={idx} className="text-slate-700 leading-relaxed">
-              {paragraph}
-            </p>
-          ))}
-        </div>
-
-        {/* Author card */}
-        <div className="mt-10 bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-semibold shrink-0">
-            {post.author.split(" ").map((n) => n[0]).join("")}
+          <div className="flex items-center gap-2 mb-3">
+            <span className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+              {post.category}
+            </span>
           </div>
-          <div>
-            <p className="text-slate-900 font-semibold">{post.author}</p>
-            <p className="text-slate-500 text-sm">{post.authorRole}</p>
+
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-tight max-w-4xl">
+            {post.title}
+          </h1>
+
+          <div className="flex flex-wrap items-center gap-4 mt-6 text-xs text-slate-500">
+            <span className="flex items-center gap-1.5 font-medium">
+              <Calendar className="w-4 h-4 text-emerald-600" />
+              {formatDate(post.publishedAt || post.createdAt)}
+            </span>
+            <span className="text-slate-300">•</span>
+            <span className="flex items-center gap-1.5 font-medium">
+              <Clock className="w-4 h-4 text-emerald-600" />
+              {post.readTime || 5} min read
+            </span>
+            <span className="text-slate-300">•</span>
+            <span className="flex items-center gap-1.5 font-medium">
+              <Eye className="w-4 h-4 text-emerald-600" />
+              {post.views || 1} views
+            </span>
+
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-1.5 hover:text-emerald-600 transition ml-auto font-semibold px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              {copied ? "Link Copied!" : "Share"}
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Related posts */}
-        {relatedPosts.length > 0 && (
-          <div className="mt-14">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">
-              More in {post.category}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Main Container Layout */}
+      <div className="max-w-6xl mx-auto px-4 py-10 flex-1 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Main Article Content (Left Column) */}
+          <div className="lg:col-span-8 space-y-8">
+            {/* Cover Image */}
+            {post.coverImage && (
+              <div className="rounded-3xl overflow-hidden aspect-video bg-slate-100 border border-slate-200/80 shadow-sm">
+                <img
+                  src={post.coverImage}
+                  alt={post.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+
+            {/* Article Excerpt Callout */}
+            {post.excerpt && (
+              <div className="p-5 rounded-2xl bg-white border-l-4 border-emerald-500 shadow-sm text-slate-700 text-sm font-medium leading-relaxed italic">
+                "{post.excerpt}"
+              </div>
+            )}
+
+            {/* Article HTML Body */}
+            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm text-slate-800 leading-relaxed text-base">
+              <div
+                className="prose max-w-none prose-emerald prose-headings:font-bold prose-headings:text-slate-900 prose-p:text-slate-700 prose-p:leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: post.content }}
+              />
+            </div>
+
+            {/* Article Tags */}
+            {post.tags && post.tags.length > 0 && (
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1">
+                  Tags:
+                </span>
+                {post.tags.map((tag, idx) => (
+                  <Link
+                    key={idx}
+                    href={`/blog?tag=${encodeURIComponent(tag)}`}
+                    className="px-3 py-1 rounded-xl bg-slate-100 text-slate-700 text-xs font-medium hover:bg-emerald-50 hover:text-emerald-700 transition"
+                  >
+                    #{tag}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Author Bio Box */}
+            {post.author && (
+              <div className="bg-white border border-slate-200/80 shadow-sm rounded-3xl p-6 flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold shrink-0 text-lg shadow-sm">
+                  {post.author.name ? (
+                    post.author.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                  ) : (
+                    <User className="w-6 h-6" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">
+                    Written By
+                  </p>
+                  <h3 className="text-slate-900 font-bold text-base mt-0.5">
+                    {post.author.name || "Admin"}
+                  </h3>
+                  <p className="text-slate-500 text-xs mt-0.5">
+                    {post.author.role || "Author & Contributor"}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Sidebar Column */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* POPULAR ARTICLES WIDGET */}
+            <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-5 sm:p-6 space-y-4 sticky top-6">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                    <Flame className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Popular Articles
+                  </h3>
+                </div>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Trending
+                </span>
+              </div>
+
+              {popularPosts && popularPosts.length > 0 ? (
+                <div className="space-y-3.5 divide-y divide-slate-100">
+                  {popularPosts.map((item) => (
+                    <Link
+                      key={item.slug}
+                      href={`/blog/${item.slug}`}
+                      className="group pt-3 first:pt-0 block"
+                    >
+                      <div className="min-w-0">
+                        <span className="inline-block text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full mb-1">
+                          {item.category}
+                        </span>
+                        <h4 className="text-xs font-bold text-slate-900 group-hover:text-emerald-600 transition line-clamp-2 leading-snug">
+                          {item.title}
+                        </h4>
+                        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-3 h-3" /> {item.views || 0} views
+                          </span>
+                          <span>•</span>
+                          <span>{item.readTime || 5} min read</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic">No popular articles yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* RELATED POSTS SECTION (Bottom Grid) */}
+        {relatedPosts && relatedPosts.length > 0 && (
+          <div className="mt-16 pt-10 border-t border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">
+                  Recommended Reading
+                </span>
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  More in {post.category}
+                </h2>
+              </div>
+
+              <Link
+                href={`/blog?category=${encodeURIComponent(post.category)}`}
+                className="text-xs font-semibold text-slate-600 hover:text-emerald-600 flex items-center gap-1 transition"
+              >
+                View all <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               {relatedPosts.map((related) => (
-                <a
+                <Link
                   key={related.slug}
                   href={`/blog/${related.slug}`}
-                  className="group bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden hover:shadow-md transition"
+                  className="group bg-white border border-slate-200/80 shadow-sm rounded-2xl overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition flex flex-col"
                 >
-                  <div className="aspect-video overflow-hidden">
-                    <img
-                      src={related.image}
-                      alt={related.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                    />
+                  <div className="aspect-video overflow-hidden bg-slate-100">
+                    {related.coverImage ? (
+                      <img
+                        src={related.coverImage}
+                        alt={related.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold">
+                        {related.title.charAt(0)}
+                      </div>
+                    )}
                   </div>
-                  <div className="p-3">
-                    <h3 className="text-sm font-semibold text-slate-900 group-hover:text-emerald-600 transition line-clamp-2">
-                      {related.title}
-                    </h3>
+                  <div className="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                      <span className="inline-block text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full mb-1.5">
+                        {related.category}
+                      </span>
+                      <h3 className="text-xs font-bold text-slate-900 group-hover:text-emerald-600 transition line-clamp-2 leading-snug">
+                        {related.title}
+                      </h3>
+                      {related.excerpt && (
+                        <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
+                          {related.excerpt}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {formatDate(related.publishedAt)}
+                      </span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {related.readTime || 5} min
+                      </span>
+                    </div>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
           </div>
