@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { fetchProducts, deleteProduct } from "@/store/slices/productSlice";
 import DeleteConfirmDialog from "@/components/ui/DeleteConfirmDialog";
 import {
@@ -108,46 +109,56 @@ export default function ProductsListPage() {
 
     return (
       <div className="relative inline-block" ref={menuRef}>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
           onClick={() => setOpen((prev) => !prev)}
           className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
         >
           <MoreVertical className="h-5 w-5" />
-        </button>
+        </motion.button>
 
-        {open && (
-          <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-            <Link
-              href={`/dashboard/products/${product._id}`}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50"
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -5 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -5 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
             >
-              <Eye className="h-4 w-4" />
-              View
-            </Link>
+              <Link
+                href={`/dashboard/products/${product._id}`}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50"
+              >
+                <Eye className="h-4 w-4" />
+                View
+              </Link>
 
-            <Link
-              href={`/dashboard/products/${product._id}/edit`}
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50"
-            >
-              <Pencil className="h-4 w-4" />
-              Edit
-            </Link>
+              <Link
+                href={`/dashboard/products/${product._id}/edit`}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 transition hover:bg-slate-50"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Link>
 
-            <button
-              onClick={() => {
-                setOpen(false);
-                handleDeleteClick(product);
-              }}
-              disabled={deleteStatus === "loading"}
-              className="flex w-full items-center gap-3 px-4 py-3 text-sm text-red-600 transition hover:bg-red-50 disabled:opacity-50"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </button>
-          </div>
-        )}
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  handleDeleteClick(product);
+                }}
+                disabled={deleteStatus === "loading"}
+                className="flex w-full items-center gap-3 px-4 py-3 text-sm text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   };

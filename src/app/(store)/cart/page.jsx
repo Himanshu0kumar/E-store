@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { Minus, Plus, Trash2, ShoppingBag, Tag, ArrowRight, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import {
@@ -98,7 +99,7 @@ export default function CartPage() {
       setToast({ message: "Cart quantity updated!", type: "cart_update" });
     } catch (err) {
       console.error("Failed to update quantity:", err);
-      setToast({ message: typeof err === "string" ? err : "Failed to update quantity.", type: "error" });
+      setToast({ message: "Failed to update item quantity.", type: "error" });
     }
   };
 
@@ -106,47 +107,46 @@ export default function CartPage() {
     if (!itemId) return;
     try {
       await dispatch(removeFromCart(itemId)).unwrap();
-      setToast({ message: "Product removed from your cart!", type: "cart_remove" });
+      setToast({ message: "Product removed from cart!", type: "cart_remove" });
     } catch (err) {
-      console.error("Failed to remove item from cart:", err);
+      console.error("Failed to remove item:", err);
       setToast({ message: "Failed to remove item from cart.", type: "error" });
     }
   };
 
-  const applyPromoCodeHandler = (e) => {
+  const handleApplyPromo = async (e) => {
     e.preventDefault();
+    setPromoError("");
     if (!promoCode.trim()) return;
 
-    dispatch(applyCoupon({ couponCode: promoCode.trim(), discount: 10 }))
-      .unwrap()
-      .then(() => {
-        setAppliedPromo({ code: promoCode.trim(), percentOff: 10 });
-        setPromoError("");
-        setToast({ message: "Promo code applied successfully!", type: "success" });
-      })
-      .catch((err) => {
-        setPromoError(err || "Invalid promo code");
-        setToast({ message: typeof err === "string" ? err : "Invalid promo code", type: "error" });
+    try {
+      const result = await dispatch(applyCoupon(promoCode.trim())).unwrap();
+      setAppliedPromo({
+        code: promoCode.trim().toUpperCase(),
+        percentOff: result.discountPercent || 10,
       });
+      setPromoCode("");
+      setToast({ message: `Coupon ${promoCode.trim().toUpperCase()} applied!`, type: "success" });
+    } catch (err) {
+      setPromoError(typeof err === "string" ? err : "Invalid or expired promo code.");
+    }
   };
 
   const calculatedSubtotal = useMemo(() => {
-    return subtotal > 0
-      ? subtotal
-      : formattedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  }, [subtotal, formattedItems]);
+    return formattedItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  }, [formattedItems]);
 
   const calculatedDiscount = appliedPromo
-    ? calculatedSubtotal * ((appliedPromo.percentOff || 10) / 100)
+    ? (calculatedSubtotal * appliedPromo.percentOff) / 100
     : discount;
+
   const calculatedShipping =
-    shipping > 0
-      ? shipping
-      : calculatedSubtotal === 0 || calculatedSubtotal >= FREE_SHIPPING_THRESHOLD
+    calculatedSubtotal >= FREE_SHIPPING_THRESHOLD || calculatedSubtotal === 0
       ? 0
       : SHIPPING_FLAT_RATE;
-  const calculatedTax =
-    tax > 0 ? tax : (calculatedSubtotal - calculatedDiscount) * TAX_RATE;
+
+  const calculatedTax = (calculatedSubtotal - calculatedDiscount) * TAX_RATE;
+
   const calculatedTotal =
     total > 0
       ? total
@@ -212,11 +212,13 @@ export default function CartPage() {
                     for free shipping
                   </p>
                   <div className="w-full h-1.5 bg-emerald-100 rounded-full mt-2 overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-600 rounded-full transition-all"
-                      style={{
+                    <motion.div
+                      className="h-full bg-emerald-600 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{
                         width: `${Math.min(100, (calculatedSubtotal / FREE_SHIPPING_THRESHOLD) * 100)}%`,
                       }}
+                      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                     />
                   </div>
                 </div>
@@ -226,62 +228,71 @@ export default function CartPage() {
                 </div>
               )}
 
-              {formattedItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 flex gap-4"
-                >
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-24 h-24 rounded-xl object-cover shrink-0"
-                  />
-                  <div className="flex-1 min-w-0 flex flex-col justify-between">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-slate-900 font-semibold truncate">
-                          {item.name}
-                        </p>
-                        <p className="text-slate-500 text-sm mt-0.5">
-                          {item.variant}
-                        </p>
+              <AnimatePresence>
+                {formattedItems.map((item) => (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: "hidden" }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                    className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 flex gap-4"
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-24 h-24 rounded-xl object-cover shrink-0"
+                    />
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-slate-900 font-semibold truncate">
+                            {item.name}
+                          </p>
+                          <p className="text-slate-500 text-sm mt-0.5">
+                            {item.variant}
+                          </p>
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => removeItem(item.id)}
+                          aria-label="Remove item"
+                          className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </motion.button>
                       </div>
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        aria-label="Remove item"
-                        className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition shrink-0"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
 
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex items-center border border-slate-200 rounded-lg">
-                        <button
-                          onClick={() => updateQuantity(item.id, -1, item.quantity)}
-                          aria-label="Decrease quantity"
-                          className="p-2 text-slate-500 hover:text-slate-900 transition"
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="w-8 text-center text-sm font-medium text-slate-900 tabular-nums">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(item.id, 1, item.quantity)}
-                          aria-label="Increase quantity"
-                          className="p-2 text-slate-500 hover:text-slate-900 transition"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center border border-slate-200 rounded-lg">
+                          <button
+                            onClick={() => updateQuantity(item.id, -1, item.quantity)}
+                            aria-label="Decrease quantity"
+                            className="p-2 text-slate-500 hover:text-slate-900 transition"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="w-8 text-center text-sm font-medium text-slate-900 tabular-nums">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.id, 1, item.quantity)}
+                            aria-label="Increase quantity"
+                            className="p-2 text-slate-500 hover:text-slate-900 transition"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <p className="text-slate-900 font-bold tabular-nums">
+                          ${(item.price * item.quantity).toFixed(2)}
+                        </p>
                       </div>
-                      <p className="text-slate-900 font-bold tabular-nums">
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </p>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
 
             {/* Order summary */}

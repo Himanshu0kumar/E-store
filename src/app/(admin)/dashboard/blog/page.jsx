@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
+import { motion } from "framer-motion";
 import {
   fetchAdminBlogPosts,
   deleteBlogPost,
@@ -94,7 +95,12 @@ export default function AdminBlogListPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Header section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm"
+      >
         <div>
           <div className="flex items-center gap-2 text-emerald-600 text-xs font-semibold uppercase tracking-wider mb-1">
             <Sparkles className="w-4 h-4" />
@@ -109,27 +115,37 @@ export default function AdminBlogListPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard/blog/categories"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-100 text-slate-700 font-medium text-sm hover:bg-slate-200 transition"
-          >
-            <FolderTree className="w-4 h-4" />
-            Categories
-          </Link>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+            <Link
+              href="/dashboard/blog/categories"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-100 text-slate-700 font-medium text-sm hover:bg-slate-200 transition"
+            >
+              <FolderTree className="w-4 h-4" />
+              Categories
+            </Link>
+          </motion.div>
 
-          <Link
-            href="/dashboard/blog/add"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition"
-          >
-            <Plus className="w-4 h-4" />
-            Create Article
-          </Link>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+            <Link
+              href="/dashboard/blog/add"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 shadow-md shadow-emerald-600/20 transition"
+            >
+              <Plus className="w-4 h-4" />
+              Create Article
+            </Link>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.05 }}
+          whileHover={{ y: -4 }}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition flex items-center gap-4"
+        >
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
             <FileText className="w-6 h-6" />
           </div>
@@ -140,9 +156,15 @@ export default function AdminBlogListPage() {
 
             <h3 className="text-2xl font-bold text-slate-900">{total || 0}</h3>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.1 }}
+          whileHover={{ y: -4 }}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition flex items-center gap-4"
+        >
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-6 h-6" />
           </div>
@@ -154,9 +176,15 @@ export default function AdminBlogListPage() {
               {totalPublished || 0}
             </h3>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.15 }}
+          whileHover={{ y: -4 }}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition flex items-center gap-4"
+        >
           <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
             <FileClock className="w-6 h-6" />
           </div>
@@ -168,9 +196,15 @@ export default function AdminBlogListPage() {
               {totalDrafts || 0}
             </h3>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.2 }}
+          whileHover={{ y: -4 }}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition flex items-center gap-4"
+        >
           <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
             <Eye className="w-6 h-6" />
           </div>
@@ -182,7 +216,7 @@ export default function AdminBlogListPage() {
               {totalViews || 0}
             </h3>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Filter and Search Bar */}

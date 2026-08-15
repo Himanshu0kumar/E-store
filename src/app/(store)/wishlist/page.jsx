@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
 import { Heart, ShoppingCart, Trash2, Star, Check, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { fetchWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice";
@@ -132,92 +133,103 @@ export default function WishlistPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {formattedItems.map((item) => {
-              const isAdded = addedCartIds.includes(item.id);
-              const isAdding = addingCartId === item.id;
+          <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <AnimatePresence>
+              {formattedItems.map((item) => {
+                const isAdded = addedCartIds.includes(item.id);
+                const isAdding = addingCartId === item.id;
 
-              return (
-                <div
-                  key={item.id}
-                  className="group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition"
-                >
-                  <div className="relative aspect-square bg-slate-50 overflow-hidden">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                    />
-                    <button
-                      onClick={() => handleRemove(item.id)}
-                      aria-label="Remove from wishlist"
-                      className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center text-rose-600 shadow-sm hover:bg-rose-50 transition shrink-0"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="p-4">
-                    <p className="text-xs text-slate-500 uppercase tracking-wide">
-                      {item.category}
-                    </p>
-                    <h3 className="text-slate-900 font-semibold mt-1 truncate">
-                      {item.name}
-                    </h3>
-
-                    <div className="flex items-center gap-1 mt-1.5">
-                      <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                      <span className="text-xs text-slate-500">
-                        {item.rating.toFixed(1)} ({item.reviewCount})
-                      </span>
+                return (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8, y: 15 }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                    whileHover={{ y: -4 }}
+                    className="group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow"
+                  >
+                    <div className="relative aspect-square bg-slate-50 overflow-hidden">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleRemove(item.id)}
+                        aria-label="Remove from wishlist"
+                        className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur flex items-center justify-center text-rose-600 shadow-sm hover:bg-rose-50 transition shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </motion.button>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-lg font-bold text-slate-900">
-                        ${item.price.toFixed(2)}
-                      </span>
-                      {item.originalPrice > item.price && (
-                        <span className="text-sm text-slate-400 line-through">
-                          ${item.originalPrice.toFixed(2)}
+                    <div className="p-4">
+                      <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">
+                        {item.category}
+                      </p>
+                      <h3 className="text-slate-900 font-semibold mt-1 truncate">
+                        {item.name}
+                      </h3>
+
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                        <span className="text-xs text-slate-500 font-medium">
+                          {item.rating.toFixed(1)} ({item.reviewCount})
                         </span>
-                      )}
-                    </div>
+                      </div>
 
-                    <button
-                      onClick={() => handleAddToCart(item)}
-                      disabled={isAdding}
-                      className={`w-full mt-4 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
-                        isAdded
-                          ? "bg-emerald-700 text-white"
-                          : "bg-emerald-600 text-white hover:bg-emerald-700"
-                      }`}
-                    >
-                      {isAdding ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Adding...
-                        </>
-                      ) : isAdded ? (
-                        <>
-                          <Check className="w-4 h-4" />
-                          Added to Cart
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingCart className="w-4 h-4" />
-                          Add to Cart
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-lg font-bold text-slate-900">
+                          ${item.price.toFixed(2)}
+                        </span>
+                        {item.originalPrice > item.price && (
+                          <span className="text-sm text-slate-400 line-through">
+                            ${item.originalPrice.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+
+                      <motion.button
+                        whileTap={{ scale: 0.96 }}
+                        onClick={() => handleAddToCart(item)}
+                        disabled={isAdding}
+                        className={`w-full mt-4 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
+                          isAdded
+                            ? "bg-emerald-700 text-white"
+                            : "bg-emerald-600 text-white hover:bg-emerald-700"
+                        }`}
+                      >
+                        {isAdding ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Adding...
+                          </>
+                        ) : isAdded ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Added to Cart
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart className="w-4 h-4" />
+                            Add to Cart
+                          </>
+                        )}
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
         )}
       </div>
 
       <Footer />
     </div>
   );
-}
+}

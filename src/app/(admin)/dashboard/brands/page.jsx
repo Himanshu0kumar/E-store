@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
   Pencil,
@@ -103,13 +104,15 @@ export default function ManageBrandsPage() {
               {brands.length} {brands.length === 1 ? "brand" : "brands"}
             </p>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => setIsAddingBrand(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 shadow-sm transition"
           >
             <Plus className="w-4 h-4" />
             Add Brand
-          </button>
+          </motion.button>
         </div>
 
         {!brandState && (
@@ -129,38 +132,44 @@ export default function ManageBrandsPage() {
         )}
 
         {/* New brand form */}
-        {isAddingBrand && (
-          <form
-            onSubmit={handleAddBrand}
-            className="bg-white border border-emerald-300 shadow-sm rounded-2xl p-4 mb-4 flex gap-2"
-          >
-            <input
-              type="text"
-              autoFocus
-              value={newBrandName}
-              onChange={(e) => setNewBrandName(e.target.value)}
-              placeholder="Brand name (e.g. Nike)"
-              className="flex-1 px-4 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition text-sm"
-            />
-            <button
-              type="submit"
-              disabled={savingAction}
-              className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition disabled:opacity-50"
+        <AnimatePresence>
+          {isAddingBrand && (
+            <motion.form
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+              onSubmit={handleAddBrand}
+              className="bg-white border border-emerald-300 shadow-sm rounded-2xl p-4 mb-4 flex gap-2 overflow-hidden"
             >
-              Save
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsAddingBrand(false);
-                setNewBrandName("");
-              }}
-              className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition"
-            >
-              Cancel
-            </button>
-          </form>
-        )}
+              <input
+                type="text"
+                autoFocus
+                value={newBrandName}
+                onChange={(e) => setNewBrandName(e.target.value)}
+                placeholder="Brand name (e.g. Nike)"
+                className="flex-1 px-4 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition text-sm"
+              />
+              <button
+                type="submit"
+                disabled={savingAction}
+                className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition disabled:opacity-50"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddingBrand(false);
+                  setNewBrandName("");
+                }}
+                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition"
+              >
+                Cancel
+              </button>
+            </motion.form>
+          )}
+        </AnimatePresence>
 
         {/* Brand list */}
         {loading && brands.length === 0 ? (
@@ -178,12 +187,18 @@ export default function ManageBrandsPage() {
             </p>
           </div>
         ) : (
-          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl divide-y divide-slate-100">
-            {brands.map((brand) => {
+          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl divide-y divide-slate-100 overflow-hidden">
+            {brands.map((brand, idx) => {
               const isEditingThis = editingBrandId === brand._id;
 
               return (
-                <div key={brand._id} className="flex items-center gap-2 p-4">
+                <motion.div
+                  key={brand._id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, delay: idx * 0.04 }}
+                  className="flex items-center gap-2 p-4 hover:bg-slate-50/60 transition"
+                >
                   <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
                     <Tag className="w-4 h-4 text-slate-500" />
                   </div>
@@ -219,14 +234,18 @@ export default function ManageBrandsPage() {
                       <span className="flex-1 font-medium text-slate-900">
                         {brand.name}
                       </span>
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => startEditing(brand._id, brand.name)}
                         aria-label="Rename brand"
                         className="p-2 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition"
                       >
                         <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() =>
                           setDeleteTarget({ brandId: brand._id, name: brand.name })
                         }
@@ -234,10 +253,10 @@ export default function ManageBrandsPage() {
                         className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </motion.button>
                     </>
                   )}
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -245,42 +264,53 @@ export default function ManageBrandsPage() {
       </div>
 
       {/* Delete confirmation modal */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-slate-900/40"
-            onClick={() => setDeleteTarget(null)}
-          />
-          <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-            <div className="w-11 h-11 rounded-full bg-rose-50 flex items-center justify-center mb-4">
-              <Trash2 className="w-5 h-5 text-rose-600" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-1">
-              Delete brand?
-            </h3>
-            <p className="text-sm text-slate-500 mb-6">
-              <span className="font-medium text-slate-700">{deleteTarget.name}</span>{" "}
-              will be permanently removed. This can't be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteTarget(null)}
-                disabled={savingAction}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={savingAction}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 text-white font-medium hover:bg-rose-700 transition disabled:opacity-50"
-              >
-                {savingAction ? "Deleting..." : "Delete"}
-              </button>
-            </div>
+      <AnimatePresence>
+        {deleteTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+              onClick={() => setDeleteTarget(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: "spring", damping: 25, stiffness: 350 }}
+              className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full"
+            >
+              <div className="w-11 h-11 rounded-full bg-rose-50 flex items-center justify-center mb-4">
+                <Trash2 className="w-5 h-5 text-rose-600" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-1">
+                Delete brand?
+              </h3>
+              <p className="text-sm text-slate-500 mb-6">
+                <span className="font-medium text-slate-700">{deleteTarget.name}</span>{" "}
+                will be permanently removed. This can't be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={savingAction}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={savingAction}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 text-white font-medium hover:bg-rose-700 transition disabled:opacity-50"
+                >
+                  {savingAction ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
