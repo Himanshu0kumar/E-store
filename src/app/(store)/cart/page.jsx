@@ -13,6 +13,7 @@ import {
   removeFromCart,
   applyCoupon,
 } from "@/store/slices/cartSlice";
+import { openAuthModal } from "@/store/slices/authSlice";
 
 import Toast from "@/components/ui/Toast";
 
@@ -23,6 +24,9 @@ const TAX_RATE = 0.08;
 export default function CartPage() {
   const router = useRouter();
   const dispatch = useDispatch();
+
+  const { user } = useSelector((state) => state.auth || {});
+  const currentUser = user?.user || user;
 
   const {
     items = [],
@@ -41,8 +45,10 @@ export default function CartPage() {
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchCart());
-  }, [dispatch]);
+    if (currentUser) {
+      dispatch(fetchCart());
+    }
+  }, [dispatch, currentUser]);
 
   // Sync coupon code if applied from backend
   useEffect(() => {
@@ -177,7 +183,25 @@ export default function CartPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-10 flex-1 w-full">
-        {loading && formattedItems.length === 0 ? (
+        {!currentUser ? (
+          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-12 sm:p-16 text-center max-w-xl mx-auto">
+            <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-100">
+              <ShoppingBag className="w-10 h-10 text-emerald-600" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">
+              Missing Cart items?
+            </h3>
+            <p className="text-slate-500 text-sm mb-8 leading-relaxed">
+              Log in to see the items you added previously or start adding products to your shopping cart.
+            </p>
+            <button
+              onClick={() => dispatch(openAuthModal({ redirect: "/cart", message: "Log in to access your Shopping Cart" }))}
+              className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition text-sm shadow-md shadow-emerald-600/20 uppercase tracking-wider"
+            >
+              Log In Now
+            </button>
+          </div>
+        ) : loading && formattedItems.length === 0 ? (
           <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-16 text-center">
             <Loader2 className="w-8 h-8 mx-auto text-emerald-600 animate-spin mb-3" />
             <p className="text-slate-600 text-sm font-medium">Loading your cart...</p>
@@ -303,7 +327,7 @@ export default function CartPage() {
                 </h2>
 
                 {/* Promo code */}
-                <form onSubmit={applyPromoCodeHandler} className="mb-5">
+                <form onSubmit={handleApplyPromo} className="mb-5">
                   <label className="block text-sm font-medium text-slate-600 mb-1.5">
                     Promo code
                   </label>
@@ -370,7 +394,13 @@ export default function CartPage() {
                 </div>
 
                 <button
-                  onClick={() => router.push("/checkout")}
+                  onClick={() => {
+                    if (!currentUser) {
+                      dispatch(openAuthModal({ redirect: "/checkout", message: "Please log in to proceed to checkout" }));
+                    } else {
+                      router.push("/checkout");
+                    }
+                  }}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition"
                 >
                   Proceed to Checkout

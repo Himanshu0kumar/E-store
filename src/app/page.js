@@ -153,11 +153,11 @@ export default function HomePage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-[#F8F7F4] flex flex-col font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-[#F8F7F4] flex flex-col font-sans">
       <Header />
 
       {/* 1. TOP CATEGORY NAV STRIP */}
-      <div className="bg-white border-b border-slate-200/80 shadow-xs sticky top-0 z-20">
+      <div className="bg-white border-b border-slate-200/80 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3 overflow-x-auto no-scrollbar scroll-smooth">
             {TOP_CATEGORIES.map((cat) => {

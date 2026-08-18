@@ -44,6 +44,22 @@ export async function POST(req) {
       { status: 401 }
     );
     // Clear dead cookies so the browser stops sending them.
+    response.cookies.set("accessToken", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 0,
+      expires: new Date(0),
+    });
+    response.cookies.set("refreshToken", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/api/auth/refresh",
+      maxAge: 0,
+      expires: new Date(0),
+    });
     response.cookies.delete("accessToken", { path: "/" });
     response.cookies.delete("refreshToken", { path: "/api/auth/refresh" });
     return response;

@@ -278,6 +278,15 @@ const wishlistSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
+
+    // Clear wishlist on logout
+    builder.addCase("auth/logoutUser/fulfilled", (state) => {
+      state.items = [];
+      state.totalItems = 0;
+      state.totalValue = 0;
+      state.loading = false;
+      state.error = null;
+    });
   },
 });
 

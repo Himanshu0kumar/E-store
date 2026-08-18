@@ -9,19 +9,24 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { fetchWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice";
 import { addToCart } from "@/store/slices/cartSlice";
+import { openAuthModal } from "@/store/slices/authSlice";
 
 import Toast from "@/components/ui/Toast";
 
 export default function WishlistPage() {
   const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth || {});
+  const currentUser = user?.user || user;
   const { items = [], loading } = useSelector((state) => state.wishlist || {});
   const [addingCartId, setAddingCartId] = useState(null);
   const [addedCartIds, setAddedCartIds] = useState([]);
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchWishlist());
-  }, [dispatch]);
+    if (currentUser) {
+      dispatch(fetchWishlist());
+    }
+  }, [dispatch, currentUser]);
 
   const formattedItems = useMemo(() => {
     return items.map((item) => {
@@ -109,7 +114,25 @@ export default function WishlistPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-10 flex-1 w-full">
-        {loading && formattedItems.length === 0 ? (
+        {!currentUser ? (
+          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-12 sm:p-16 text-center max-w-xl mx-auto">
+            <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-rose-50 flex items-center justify-center border border-rose-100">
+              <Heart className="w-10 h-10 text-rose-500" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">
+              Missing Wishlist items?
+            </h3>
+            <p className="text-slate-500 text-sm mb-8 leading-relaxed">
+              Log in to view saved items in your wishlist or add new products to your saved list.
+            </p>
+            <button
+              onClick={() => dispatch(openAuthModal({ redirect: "/wishlist", message: "Log in to access your Wishlist" }))}
+              className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition text-sm shadow-md shadow-emerald-600/20 uppercase tracking-wider"
+            >
+              Log In Now
+            </button>
+          </div>
+        ) : loading && formattedItems.length === 0 ? (
           <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-16 text-center">
             <Loader2 className="w-8 h-8 mx-auto text-emerald-600 animate-spin mb-3" />
             <p className="text-slate-600 text-sm font-medium">Loading your wishlist...</p>

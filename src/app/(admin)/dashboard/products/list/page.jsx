@@ -309,7 +309,7 @@ export default function ProductsListPage() {
         </div>
 
         {/* TABLE */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
           <div className="max-h-[650px] overflow-y-auto">
             <table className="w-full">
               <thead className="sticky top-0 z-10 bg-slate-50">

@@ -7,16 +7,17 @@ import { useDispatch, useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { addToCart } from "@/store/slices/cartSlice";
 import { addToWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice";
-import Toast from "@/components/ui/Toast";
-
+import { useToast } from "@/context/ToastContext";
 
 export default function ProductCard({ product }) {
   const dispatch = useDispatch();
+  const toast = useToast();
+  const { user } = useSelector((state) => state.auth || {});
   const { items: wishlistItems = [] } = useSelector((state) => state.wishlist || {});
   const { items: cartItems = [] } = useSelector((state) => state.cart || {});
+  const currentUser = user?.user || user;
   const [added, setAdded] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const [toast, setToast] = useState(null);
 
   if (!product) return null;
 
@@ -97,10 +98,16 @@ export default function ProductCard({ product }) {
   const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!currentUser) {
+      toast.error("Please log in to add items to your cart");
+      return;
+    }
+
     if (isAdding) return;
 
     if (isInCart) {
-      setToast({ message: "This product is already in your cart!", type: "cart_exists" });
+      toast.cartExists("This product is already in your cart!");
       return;
     }
 
@@ -110,13 +117,13 @@ export default function ProductCard({ product }) {
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
       if (res?.alreadyExists) {
-        setToast({ message: "Item quantity updated in cart!", type: "cart_update" });
+        toast.cartUpdate("Item quantity updated in cart!");
       } else {
-        setToast({ message: "Product added to cart successfully!", type: "cart_add" });
+        toast.cartAdd("Product added to cart successfully!");
       }
     } catch (err) {
       console.error("Failed to add to cart:", err);
-      setToast({ message: typeof err === "string" ? err : "Failed to add product to cart.", type: "error" });
+      toast.error(typeof err === "string" ? err : "Failed to add product to cart.");
     } finally {
       setIsAdding(false);
     }
@@ -126,21 +133,26 @@ export default function ProductCard({ product }) {
     e.preventDefault();
     e.stopPropagation();
 
+    if (!currentUser) {
+      toast.error("Please log in to save items to your wishlist");
+      return;
+    }
+
     try {
       if (!isWishlisted) {
         const res = await dispatch(addToWishlist({ productId })).unwrap();
         if (res?.alreadyExists) {
-          setToast({ message: "Product is already in your wishlist!", type: "wishlist_exists" });
+          toast.wishlistExists("Product is already in your wishlist!");
         } else {
-          setToast({ message: "Product added to wishlist successfully!", type: "wishlist_add" });
+          toast.wishlistAdd("Product added to wishlist successfully!");
         }
       } else {
         await dispatch(removeFromWishlist(productId)).unwrap();
-        setToast({ message: "Product removed from your wishlist!", type: "wishlist_remove" });
+        toast.wishlistRemove("Product removed from your wishlist!");
       }
     } catch (err) {
       console.error("Failed to update wishlist:", err);
-      setToast({ message: typeof err === "string" ? err : "Failed to update wishlist.", type: "error" });
+      toast.error(typeof err === "string" ? err : "Failed to update wishlist.");
     }
   };
 
@@ -150,13 +162,6 @@ export default function ProductCard({ product }) {
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       className="group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-slate-300 transition-shadow duration-300 flex flex-col justify-between h-full relative"
     >
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
       <div>
         <div className="relative aspect-square bg-slate-50 overflow-hidden">
           <img

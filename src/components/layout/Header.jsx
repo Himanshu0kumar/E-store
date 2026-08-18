@@ -15,9 +15,10 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { logoutUser, getUserProfile } from "@/store/slices/authSlice";
+import { logoutUser, getUserProfile, openAuthModal } from "@/store/slices/authSlice";
 import { fetchCart } from "@/store/slices/cartSlice";
 import { fetchWishlist } from "@/store/slices/wishlistSlice";
+import AuthModal from "@/components/common/AuthModal";
 
 export default function Header() {
   const dispatch = useDispatch();
@@ -45,12 +46,16 @@ export default function Header() {
 
   // Fetch user profile, cart & wishlist on mount for persistent login
   useEffect(() => {
-    if (!user) {
+    const isLoggedOut = typeof window !== "undefined" && localStorage.getItem("isLoggedOut") === "true";
+    if (!user && !isLoggedOut) {
       dispatch(getUserProfile());
+      dispatch(fetchCart());
+      dispatch(fetchWishlist());
+    } else if (user) {
+      dispatch(fetchCart());
+      dispatch(fetchWishlist());
     }
-    dispatch(fetchCart());
-    dispatch(fetchWishlist());
-  }, [dispatch]);
+  }, [dispatch, user]);
 
   const cartCount = cartState?.items?.length || cartState?.itemCount || 0;
   const wishlistCount = wishlistState?.items?.length || wishlistState?.totalItems || 0;
@@ -61,7 +66,7 @@ export default function Header() {
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
-      router.push("/login");
+      window.location.href = "/";
     }
   };
 
@@ -75,8 +80,23 @@ export default function Header() {
 
   const isActive = (path) => pathname === path;
 
+  const handleWishlistClick = (e) => {
+    if (!currentUser || !userName) {
+      e.preventDefault();
+      dispatch(openAuthModal({ redirect: "/wishlist", message: "Please log in to view your wishlist" }));
+    }
+  };
+
+  const handleCartClick = (e) => {
+    if (!currentUser || !userName) {
+      e.preventDefault();
+      dispatch(openAuthModal({ redirect: "/cart", message: "Please log in to view your cart" }));
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-xl text-slate-100 shadow-xl shadow-black/30 transition-all">
+      <AuthModal />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
           
@@ -153,6 +173,7 @@ export default function Header() {
             {/* WISHLIST BUTTON */}
             <Link
               href="/wishlist"
+              onClick={handleWishlistClick}
               className="relative p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-900 transition flex items-center gap-1.5"
               title="Wishlist"
             >
@@ -171,6 +192,7 @@ export default function Header() {
             {/* CART BUTTON */}
             <Link
               href="/cart"
+              onClick={handleCartClick}
               className="relative p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-900 transition flex items-center gap-1.5"
               title="Shopping Cart"
             >
@@ -307,7 +329,10 @@ export default function Header() {
 
               <Link
                 href="/wishlist"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={(e) => {
+                  setMobileMenuOpen(false);
+                  handleWishlistClick(e);
+                }}
                 className="flex items-center justify-between px-4 py-2.5 rounded-xl text-slate-300 hover:bg-slate-900 transition"
               >
                 <div className="flex items-center gap-2">
@@ -323,7 +348,10 @@ export default function Header() {
 
               <Link
                 href="/cart"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={(e) => {
+                  setMobileMenuOpen(false);
+                  handleCartClick(e);
+                }}
                 className="flex items-center justify-between px-4 py-2.5 rounded-xl text-slate-300 hover:bg-slate-900 transition"
               >
                 <div className="flex items-center gap-2">

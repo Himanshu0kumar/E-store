@@ -26,8 +26,9 @@ import ProductCard from "@/components/common/ProductCard";
 import { fetchProductById, fetchProducts } from "@/store/slices/productSlice";
 import { addToCart, fetchCart } from "@/store/slices/cartSlice";
 import { addToWishlist, removeFromWishlist, fetchWishlist } from "@/store/slices/wishlistSlice";
+import { openAuthModal } from "@/store/slices/authSlice";
 import ProductDetailsView from "@/components/ui/ProductDetailsView";
-import Toast from "@/components/ui/Toast";
+import { useToast } from "@/context/ToastContext";
 
 export default function ProductDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -35,6 +36,10 @@ export default function ProductDetailPage({ params }) {
 
   const router = useRouter();
   const dispatch = useDispatch();
+  const toast = useToast();
+
+  const { user } = useSelector((state) => state.auth || {});
+  const currentUser = user?.user || user;
 
   const { selectedProduct, items: allProducts, loading } = useSelector(
     (state) => state.products
@@ -78,7 +83,6 @@ export default function ProductDetailPage({ params }) {
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedImage, setSelectedImage] = useState(0);
-  const [toastMessage, setToastMessage] = useState("");
   const [pincode, setPincode] = useState("");
   const [pincodeChecked, setPincodeChecked] = useState(false);
 
@@ -94,16 +98,16 @@ export default function ProductDetailPage({ params }) {
     }
   }, [productId, dispatch]);
 
-  const showNotification = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(""), 3000);
-  };
-
   const handleAddToCart = async () => {
     if (!selectedProduct) return;
 
+    if (!currentUser) {
+      toast.error("Please log in to add items to your cart");
+      return;
+    }
+
     if (isInCart) {
-      showNotification("This product is already in your cart!");
+      toast.cartExists("This product is already in your cart!");
       return;
     }
 
@@ -116,14 +120,19 @@ export default function ProductDetailPage({ params }) {
           selectedSize: activeSize,
         })
       );
-      showNotification("Product added to cart successfully!");
+      toast.cartAdd("Product added to cart successfully!");
     } catch (err) {
       console.error("Failed to add to cart:", err);
-      showNotification("Failed to add product to cart.");
+      toast.error("Failed to add product to cart.");
     }
   };
 
   const handleBuyNow = async () => {
+    if (!currentUser) {
+      toast.error("Please log in to proceed to checkout");
+      return;
+    }
+
     if (!isInCart) {
       await handleAddToCart();
     }
@@ -132,21 +141,26 @@ export default function ProductDetailPage({ params }) {
 
   const handleWishlistToggle = async () => {
     if (!selectedProduct) return;
+
+    if (!currentUser) {
+      toast.error("Please log in to save items to your wishlist");
+      return;
+    }
     try {
       if (!isInWishlist) {
         const res = await dispatch(addToWishlist({ productId: pid })).unwrap();
         if (res?.alreadyExists) {
-          showNotification("Product is already in your wishlist!");
+          toast.wishlistExists("Product is already in your wishlist!");
         } else {
-          showNotification("Product added to your wishlist successfully!");
+          toast.wishlistAdd("Product added to your wishlist successfully!");
         }
       } else {
         await dispatch(removeFromWishlist(pid)).unwrap();
-        showNotification("Product removed from your wishlist!");
+        toast.wishlistRemove("Product removed from your wishlist!");
       }
     } catch (err) {
       console.error("Wishlist update failed:", err);
-      showNotification(typeof err === "string" ? err : "Wishlist update failed.");
+      toast.error(typeof err === "string" ? err : "Wishlist update failed.");
     }
   };
 
@@ -224,12 +238,6 @@ export default function ProductDetailPage({ params }) {
   return (
     <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
       <Header />
-
-      {/* TOAST NOTIFICATION */}
-      <Toast
-        message={toastMessage}
-        onClose={() => setToastMessage("")}
-      />
 
       {/* BREADCRUMB BAR */}
       <div className="bg-white border-b border-slate-200/80">

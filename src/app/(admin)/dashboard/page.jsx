@@ -267,7 +267,7 @@ export default function DashboardPage() {
       </section>
 
       {/* Stat Cards */}
-      <section className="grid gap-4 lg:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {statCards.map((card, index) => (
           <StatCard key={card.title} card={card} index={index} />
         ))}

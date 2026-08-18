@@ -169,8 +169,13 @@ export default function DashboardPage() {
 
   // Handle logout
   const handleLogout = async () => {
-    await dispatch(logoutUser());
-    router.push("/login");
+    try {
+      await dispatch(logoutUser()).unwrap();
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      window.location.href = "/";
+    }
   };
 
   // Handle add address

@@ -2,14 +2,17 @@
 
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
 import { Mail, Lock, Eye, EyeOff, Loader, LogIn } from "lucide-react";
 import { loginUser } from "@/store/slices/authSlice";
+import { getPostLoginRedirect } from "@/lib/auth/redirects";
 
-export default function LoginPage() {
+function LoginForm() {
   const dispatch = useDispatch();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || searchParams.get("from");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
@@ -24,13 +27,9 @@ export default function LoginPage() {
   const onSubmit = async (data) => {
     const result = await dispatch(loginUser({ ...data, rememberMe }));
 
-    // Only navigate on an actual successful login, and let the
-    // server tell us where to go rather than guessing from any
-    // client-side storage. The accessToken/refreshToken cookies are
-    // httpOnly by design — this page has no business (and no way)
-    // to read them directly.
     if (loginUser.fulfilled.match(result)) {
-      router.push("/user/dashboard");
+      const targetPath = getPostLoginRedirect(result.payload?.user, redirectPath);
+      router.push(targetPath);
     }
   };
 
@@ -216,5 +215,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+        <Loader className="w-8 h-8 animate-spin text-emerald-400" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }

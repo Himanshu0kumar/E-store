@@ -5,7 +5,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Mail, Lock, User, Eye, EyeOff, Loader } from "lucide-react";
-import { registerUser} from "@/store/slices/authSlice" ;
+import { registerUser } from "@/store/slices/authSlice";
+import { getPostLoginRedirect } from "@/lib/auth/redirects";
 
 export default function RegisterPage() {
   const dispatch = useDispatch();
@@ -31,13 +32,17 @@ export default function RegisterPage() {
       return;
     }
 
-    // Dispatch register action
-    await dispatch(registerUser(data));
+    const result = await dispatch(registerUser(data));
+    if (registerUser.fulfilled.match(result)) {
+      const targetPath = getPostLoginRedirect(result.payload?.user);
+      router.push(targetPath);
+    }
   };
 
   useEffect(() => {
-    if (user?.token) {
-      router.replace("/dashboard");
+    if (user) {
+      const targetPath = getPostLoginRedirect(user);
+      router.replace(targetPath);
     }
   }, [user, router]);
 

@@ -1,19 +1,15 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MoreVertical, ChevronDown, ChevronRight } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { logoutUser, getUserProfile } from "@/store/slices/authSlice";
+import { MoreVertical, ChevronDown, ChevronRight, LogOut, ShieldCheck, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-
 const overviewItems = [
-  { label: "App", icon: "home", href: "/dashboard" },
-  { label: "Ecommerce", icon: "bag", href: "/dashboard/ecommerce" },
+  { label: "Dashboard", icon: "home", href: "/dashboard" },
   { label: "Analytics", icon: "chart", href: "/dashboard/analytics" },
-  { label: "Banking", icon: "bank", href: "/dashboard/banking" },
-  { label: "Booking", icon: "plane", href: "/dashboard/booking" },
-  { label: "File", icon: "file", href: "/dashboard/file" },
-  { label: "Course", icon: "book", href: "/dashboard/course" },
 ];
 
 const managementItems = [
@@ -316,12 +312,131 @@ function NavItem({ item, pathname }) {
   );
 }
 
+
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const isLoggedOut =
+      typeof window !== "undefined" &&
+      localStorage.getItem("isLoggedOut") === "true";
+    if (!user && !isLoggedOut) {
+      dispatch(getUserProfile());
+    }
+  }, [dispatch, user]);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const currentUser = user?.user || user;
+  const adminName = currentUser?.name || "Admin User";
+  const adminEmail = currentUser?.email || "admin@store.com";
+  const adminAvatar = currentUser?.avatar || currentUser?.image;
+  const initials =
+    adminName
+      ?.trim()
+      ?.split(" ")
+      ?.map((n) => n[0])
+      ?.join("")
+      ?.toUpperCase()
+      ?.slice(0, 2) || "AD";
+
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutUser()).unwrap();
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      window.location.href = "/";
+    }
+  };
 
   return (
     <main className="h-screen overflow-hidden bg-[#f5f8fb] text-slate-900">
-      <div className="flex w-full">
+      {/* MOBILE SIDEBAR DRAWER OVERLAY */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileOpen(false)}
+              className="fixed inset-0 z-[60] bg-slate-950/60 backdrop-blur-sm xl:hidden"
+            />
+
+            {/* Slide-over Drawer */}
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              className="fixed inset-y-0 left-0 z-[70] w-[280px] border-r border-slate-200 bg-white px-5 py-6 shadow-2xl overflow-y-auto xl:hidden"
+            >
+              <div className="flex items-center justify-between px-2 pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500 text-lg font-black text-white shadow-md shadow-emerald-500/20">
+                    M
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-900 text-base">ShopX</span>
+                    <p className="text-xs text-slate-400">Admin Panel</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="p-1.5 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="mt-6">
+                <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Overview
+                </p>
+                <div className="mt-3 space-y-1">
+                  {overviewItems.map((item) => (
+                    <NavItem key={item.label} item={item} pathname={pathname} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Management
+                </p>
+                <div className="mt-3 space-y-1">
+                  {managementItems.map((item) => (
+                    <NavItem key={item.label} item={item} pathname={pathname} />
+                  ))}
+                </div>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      <div className="flex w-full h-full">
+        {/* DESKTOP SIDEBAR */}
         <aside className="hidden w-[250px] shrink-0 border-r border-slate-200 bg-white px-5 py-6 xl:block h-screen overflow-y-auto sticky top-0">
           <div className="flex items-center gap-2 px-2">
             <motion.div
@@ -355,58 +470,61 @@ export default function DashboardLayout({ children }) {
           </div>
         </aside>
 
+        {/* MAIN CONTENT WRAPPER */}
         <div className="min-w-0 flex-1 bg-transparent h-screen overflow-y-auto">
-          <div className="sticky top-0 z-50 backdrop-blur-xl bg-white/60 border-b border-white/30 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.25)] sm:px-5 lg:px-7">
-            <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 py-3 min-h-[72px]">
-              <div className="flex items-center gap-3">
+          {/* HEADER BAR */}
+          <div className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-slate-200/80 shadow-xs px-3 sm:px-6">
+            <header className="flex items-center justify-between gap-3 py-3 min-h-[64px]">
+              <div className="flex items-center gap-2 sm:gap-3">
+                {/* Mobile Menu Toggle Button */}
                 <motion.button
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.92 }}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600 transition"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setMobileOpen(true)}
+                  className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-xs xl:hidden"
+                  aria-label="Open navigation menu"
                 >
-                  &lt;
+                  <Menu className="w-5 h-5 text-slate-700" />
                 </motion.button>
+
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-2.5 shadow-sm cursor-pointer"
+                  className="flex items-center gap-2 sm:gap-3 rounded-full border border-slate-200/80 bg-white px-3.5 sm:px-4 py-1.5 sm:py-2 shadow-xs cursor-pointer"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-xs font-bold text-white">
-                    T
+                  <span className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl bg-emerald-500 text-xs font-black text-white shadow-xs shadow-emerald-500/20">
+                    A
                   </span>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-800">
-                        Team 1
-                      </span>
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
-                        Free
-                      </span>
-                    </div>
+                    <span className="text-xs sm:text-sm font-bold text-slate-900">
+                      Admin Dashboard
+                    </span>
                   </div>
                 </motion.div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <motion.div
                   whileHover={{ scale: 1.03 }}
-                  className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-400 cursor-pointer hover:bg-slate-100 transition"
+                  className="hidden sm:flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-1.5 text-xs text-slate-400 cursor-pointer hover:bg-slate-100 transition"
                 >
-                  <span className="text-base leading-none">S</span>
-                  <span className="rounded-md bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500 shadow-sm">
+                  <span className="text-xs font-semibold">Search</span>
+                  <span className="rounded-md bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 shadow-xs">
                     Ctrl K
                   </span>
                 </motion.div>
+
                 <motion.span
                   whileHover={{ scale: 1.08 }}
                   whileTap={{ scale: 0.92 }}
-                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
+                  className="hidden sm:flex h-9 w-9 sm:h-10 sm:w-10 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 hover:bg-slate-200 transition"
                 >
                   EN
                 </motion.span>
+
                 <motion.div
                   whileHover={{ scale: 1.08 }}
                   whileTap={{ scale: 0.92 }}
-                  className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
+                  className="relative flex h-9 w-9 sm:h-10 sm:w-10 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
                 >
                   <svg
                     className="h-4 w-4"
@@ -423,37 +541,82 @@ export default function DashboardLayout({ children }) {
                   <motion.span
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ repeat: Infinity, duration: 2, repeatDelay: 2 }}
-                    className="absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white shadow-sm"
+                    className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[9px] font-bold text-white shadow-xs"
                   >
                     4
                   </motion.span>
                 </motion.div>
-                <motion.span
-                  whileHover={{ scale: 1.08, rotate: 30 }}
-                  whileTap={{ scale: 0.92 }}
-                  className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition"
-                >
-                  <svg
-                    className="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+
+                {/* Admin Profile Dropdown Menu & Logout Button */}
+                <div className="relative" ref={dropdownRef}>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center gap-2 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 p-[2px] shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    title={adminName}
                   >
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 1-4 0 1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 1 0-4 1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 1 4 0 1.7 1.7 0 0 0 1 .6 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.23.3.43.64.6 1a1.7 1.7 0 0 1 0 4c-.17.36-.37.7-.6 1Z" />
-                  </svg>
-                </motion.span>
-                <motion.div
-                  whileHover={{ scale: 1.08 }}
-                  className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-orange-300 via-emerald-300 to-sky-300 p-[2px] shadow-sm"
-                >
-                  <div className="flex h-full w-full items-center justify-center rounded-full bg-white text-sm font-bold text-slate-700">
-                    HF
-                  </div>
-                </motion.div>
+                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-white text-xs sm:text-sm font-bold text-emerald-800 overflow-hidden">
+                      {adminAvatar ? (
+                        <img
+                          src={adminAvatar}
+                          alt={adminName}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span>{initials}</span>
+                      )}
+                    </div>
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {dropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-2 w-60 sm:w-64 rounded-2xl bg-white p-3 shadow-xl border border-slate-200/80 z-50"
+                      >
+                        <div className="flex items-center gap-3 px-3 py-2 border-b border-slate-100 pb-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs shrink-0 overflow-hidden">
+                            {adminAvatar ? (
+                              <img
+                                src={adminAvatar}
+                                alt={adminName}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span>{initials}</span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                              {adminName}
+                            </p>
+                            <p className="text-[11px] text-slate-500 truncate">
+                              {adminEmail}
+                            </p>
+                            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-emerald-50 text-[10px] font-semibold text-emerald-700 border border-emerald-200">
+                              <ShieldCheck className="w-3 h-3" />
+                              Administrator
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2">
+                          <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-rose-600 hover:bg-rose-50 transition"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            Log Out
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             </header>
           </div>
@@ -463,7 +626,7 @@ export default function DashboardLayout({ children }) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
-            className="p-4"
+            className="p-3 sm:p-6"
           >
             {children}
           </motion.div>

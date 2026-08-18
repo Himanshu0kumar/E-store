@@ -1,6 +1,5 @@
-import { cookies } from "next/headers";
 import { connectDB } from "@/lib/db";
-import { verifyToken } from "@/services/auth.service";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 import {
   removeFromWishlist,
   updateWishlistItemPriority,
@@ -9,16 +8,11 @@ import {
 } from "@/services/wishlist.service";
 
 async function verifyAuth(req) {
-  let token = req.headers.get("authorization")?.split(" ")[1];
-  if (!token) {
-    const cookieStore = await cookies();
-    token = cookieStore.get("accessToken")?.value;
-  }
-  if (!token) {
+  const userId = await getAuthUser(req);
+  if (!userId) {
     throw new Error("No token provided");
   }
-  const decoded = await verifyToken(token);
-  return decoded.userId;
+  return userId;
 }
 
 // PUT: Update wishlist item (priority or note)

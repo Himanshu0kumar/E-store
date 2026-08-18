@@ -2,7 +2,12 @@
 
 import { Provider } from "react-redux";
 import { store } from "@/store/store";
+import { ToastProvider } from "@/context/ToastContext";
 
 export default function Providers({ children }) {
-  return <Provider store={store}>{children}</Provider>;
+  return (
+    <Provider store={store}>
+      <ToastProvider>{children}</ToastProvider>
+    </Provider>
+  );
 }

@@ -53,9 +53,6 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
-        }
         return Promise.reject(refreshError);
       }
     }
@@ -98,11 +95,17 @@ export const logoutUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await api.post("/api/auth/logout", {});
-      return null;
     } catch (error) {
       // Even if the API call fails, treat the client as logged out.
-      return null;
+    } finally {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("isLoggedOut", "true");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
+      }
     }
+    return null;
   }
 );
 
@@ -213,6 +216,9 @@ const initialState = {
   loading: false,
   error: null,
   success: false,
+  isAuthModalOpen: false,
+  authModalRedirect: null,
+  authModalMessage: "",
 };
 
 // ========================================
@@ -228,6 +234,16 @@ const authSlice = createSlice({
     clearSuccess: (state) => {
       state.success = false;
     },
+    openAuthModal: (state, action) => {
+      state.isAuthModalOpen = true;
+      state.authModalRedirect = action.payload?.redirect || null;
+      state.authModalMessage = action.payload?.message || "";
+    },
+    closeAuthModal: (state) => {
+      state.isAuthModalOpen = false;
+      state.authModalRedirect = null;
+      state.authModalMessage = "";
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -239,6 +255,10 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.success = true;
+        state.isAuthModalOpen = false;
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("isLoggedOut");
+        }
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
@@ -254,6 +274,10 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = action.payload.user;
         state.success = true;
+        state.isAuthModalOpen = false;
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("isLoggedOut");
+        }
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -288,6 +312,8 @@ const authSlice = createSlice({
       })
       .addCase(getUserProfile.rejected, (state, action) => {
         state.loading = false;
+        state.user = null;
+        state.addresses = [];
         state.error = action.payload;
       });
 
@@ -380,5 +406,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, clearSuccess } = authSlice.actions;
+export const { clearError, clearSuccess, openAuthModal, closeAuthModal } = authSlice.actions;
 export default authSlice.reducer;

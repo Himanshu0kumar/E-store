@@ -291,6 +291,20 @@ const cartSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
+
+    // Clear cart on logout
+    builder.addCase("auth/logoutUser/fulfilled", (state) => {
+      state.items = [];
+      state.subtotal = 0;
+      state.tax = 0;
+      state.shipping = 0;
+      state.discount = 0;
+      state.total = 0;
+      state.couponCode = null;
+      state.itemCount = 0;
+      state.loading = false;
+      state.error = null;
+    });
   },
 });
 
