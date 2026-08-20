@@ -9,7 +9,7 @@ import axios from "axios";
 // needed now. No interceptor writes/reads localStorage or sets
 // an Authorization header; the cookie does that job invisibly.
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  baseURL: "",
   withCredentials: true,
 });
 
@@ -44,7 +44,7 @@ api.interceptors.response.use(
         // No body needed — the refresh cookie goes along
         // automatically because of withCredentials.
         await axios.post(
-          `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/auth/refresh`,
+          "/api/auth/refresh",
           {},
           { withCredentials: true }
         );
