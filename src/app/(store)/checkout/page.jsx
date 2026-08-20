@@ -24,6 +24,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { fetchCart } from "@/store/slices/cartSlice";
 import { getAddresses, getUserProfile, addAddress } from "@/store/slices/authSlice";
+import { createNewOrder } from "@/store/slices/orderSlice";
 
 const SHIPPING_FLAT_RATE = 6.99;
 const FREE_SHIPPING_THRESHOLD = 100;
@@ -215,13 +216,61 @@ export default function CheckoutPage() {
 
   const goBack = () => setCurrentStep((s) => Math.max(0, s - 1));
 
+  const [createdOrderData, setCreatedOrderData] = useState(null);
+  const [orderError, setOrderError] = useState(null);
+
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     setPlacingOrder(true);
-    // Real order creation API simulation
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setPlacingOrder(false);
-    setOrderPlaced(true);
+    setOrderError(null);
+
+    const payload = {
+      items: cartItemsRaw.map((item) => {
+        const prod = typeof item.productId === "object" && item.productId !== null ? item.productId : {};
+        return {
+          productId: prod._id || item.productId,
+          name: prod.name || item.name || "Product Item",
+          image: prod.images?.[0] || "",
+          price: item.price ?? prod.salePrice ?? prod.regularPrice ?? 0,
+          quantity: item.quantity || 1,
+          selectedColor: item.selectedColor || "",
+          selectedSize: item.selectedSize || "",
+          sku: prod.productSKU || "",
+        };
+      }),
+      shippingAddress: {
+        fullName: shippingAddress.fullName || user?.name || "Customer",
+        phone: contact.phone || user?.phone || "",
+        email: contact.email || user?.email || "",
+        street: shippingAddress.street,
+        city: shippingAddress.city,
+        state: shippingAddress.state,
+        postalCode: shippingAddress.postalCode,
+        country: shippingAddress.country || "United States",
+      },
+      paymentInfo: {
+        method: paymentMethod,
+        cardLast4: paymentMethod === "card" && cardDetails.number ? cardDetails.number.slice(-4) : "4242",
+      },
+      pricing: {
+        subtotal,
+        shippingFee: shippingCost,
+        tax,
+        totalAmount: total,
+      },
+      contact,
+    };
+
+    try {
+      const result = await dispatch(createNewOrder(payload)).unwrap();
+      setCreatedOrderData(result?.data || result);
+      setOrderPlaced(true);
+    } catch (err) {
+      console.error("Order placement failed:", err);
+      setOrderError(err || "Failed to place order. Please try again.");
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   const addressTypeIcon = (type) => {
@@ -237,24 +286,42 @@ export default function CheckoutPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white border border-slate-200 shadow-sm rounded-2xl p-10 text-center max-w-md w-full"
+            className="bg-white border border-slate-200 shadow-sm rounded-2xl p-8 sm:p-10 text-center max-w-lg w-full"
           >
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-50 flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center shadow-inner">
               <Check className="w-8 h-8 text-emerald-600" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900 mb-2">
-              Order confirmed
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-200">
+              Order Confirmed
+            </span>
+            <h1 className="text-2xl font-bold text-slate-900 mt-3 mb-1">
+              Thank you for your order!
             </h1>
-            <p className="text-slate-500 text-sm mb-6">
-              A confirmation has been sent to {contact.email || "your email"}.
-              Your total was <span className="font-semibold">${total.toFixed(2)}</span>.
+            {createdOrderData?.orderNumber && (
+              <p className="text-sm font-mono font-bold text-slate-700 mb-3 bg-slate-50 py-1 px-3 rounded-lg inline-block border border-slate-200">
+                Order ID: {createdOrderData.orderNumber}
+              </p>
+            )}
+            <p className="text-slate-500 text-sm mb-6 leading-relaxed">
+              We have received your order and sent confirmation to{" "}
+              <strong className="text-slate-800">{contact.email || user?.email || "your email"}</strong>.
+              Estimated delivery is within 4–6 business days.
             </p>
-            <button
-              onClick={() => router.push("/product")}
-              className="w-full px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition shadow-md shadow-emerald-600/20"
-            >
-              Continue Shopping
-            </button>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => router.push("/user/dashboard?tab=orders")}
+                className="flex-1 px-5 py-3 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition shadow-md shadow-emerald-600/20"
+              >
+                Track My Order
+              </button>
+              <button
+                onClick={() => router.push("/product")}
+                className="flex-1 px-5 py-3 rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition"
+              >
+                Continue Shopping
+              </button>
+            </div>
           </motion.div>
         </div>
         <Footer />

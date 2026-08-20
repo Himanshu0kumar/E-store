@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import {
   User,
   ShoppingBag,
@@ -23,6 +24,14 @@ import {
   Home,
   Briefcase,
   ShieldCheck,
+  Truck,
+  FileText,
+  Search,
+  Filter,
+  Eye,
+  AlertCircle,
+  ExternalLink,
+  ChevronDown,
 } from "lucide-react";
 import {
   logoutUser,
@@ -33,6 +42,13 @@ import {
   updateAddress,
   deleteAddress,
 } from "@/store/slices/authSlice";
+import {
+  fetchUserOrders,
+  cancelOrderAction,
+} from "@/store/slices/orderSlice";
+import OrderTracker from "@/components/orders/OrderTracker";
+import InvoiceModal from "@/components/orders/InvoiceModal";
+import CancelOrderModal from "@/components/orders/CancelOrderModal";
 
 // Small helper so the address type icon is consistent everywhere
 // it appears (card badge). Purely presentational.
@@ -59,9 +75,21 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, addresses, loading, error, success } = useSelector((state) => state.auth);
   const { items: wishlistItems } = useSelector((state) => state.wishlist);
+  const { userOrders = [], loading: ordersLoading = false } = useSelector(
+    (state) => state.orders || {}
+  );
+
   const [activeTab, setActiveTab] = useState("overview");
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState(null);
+
+  // Orders Tab State
+  const [orderFilterStatus, setOrderFilterStatus] = useState("all");
+  const [orderSearchQuery, setOrderSearchQuery] = useState("");
+  const [selectedOrderForTracking, setSelectedOrderForTracking] = useState(null);
+  const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState(null);
+  const [selectedOrderForCancel, setSelectedOrderForCancel] = useState(null);
+  const [isCancellingOrder, setIsCancellingOrder] = useState(false);
 
   const emptyAddressForm = {
     name: "",
@@ -100,16 +128,53 @@ export default function DashboardPage() {
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
-  // Refetch the logged-in user's profile (and addresses) whenever
-  // this page mounts — a page refresh clears Redux's in-memory
-  // state, so this is what repopulates it from the still-valid
-  // accessToken cookie. Without this, the dashboard only ever showed
-  // data that happened to already be sitting in the store from a
-  // prior action (e.g. right after adding an address), which is why
-  // it looked empty on refresh or right after logging back in.
+  // Refetch the logged-in user's profile and orders
   useEffect(() => {
     dispatch(getUserProfile());
+    dispatch(fetchUserOrders());
   }, [dispatch]);
+
+  // Handle URL query parameter `tab=orders`
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get("tab");
+      if (tabParam && tabs.some((t) => t.id === tabParam)) {
+        setActiveTab(tabParam);
+      }
+    }
+  }, []);
+
+  // Fetch orders when tab or filters change
+  useEffect(() => {
+    if (activeTab === "orders") {
+      dispatch(
+        fetchUserOrders({
+          status: orderFilterStatus,
+          search: orderSearchQuery,
+        })
+      );
+    }
+  }, [activeTab, orderFilterStatus, orderSearchQuery, dispatch]);
+
+  const handleConfirmCancelOrder = async (reason) => {
+    if (!selectedOrderForCancel) return;
+    setIsCancellingOrder(true);
+    try {
+      await dispatch(
+        cancelOrderAction({
+          orderId: selectedOrderForCancel._id,
+          reason,
+        })
+      ).unwrap();
+      setSelectedOrderForCancel(null);
+      dispatch(fetchUserOrders({ status: orderFilterStatus, search: orderSearchQuery }));
+    } catch (err) {
+      alert(err || "Failed to cancel order");
+    } finally {
+      setIsCancellingOrder(false);
+    }
+  };
 
   // Handle starting a profile edit
   const handleEditProfileClick = () => {
@@ -388,21 +453,27 @@ export default function DashboardPage() {
                             <ShoppingBag className="w-3.5 h-3.5" />
                             Orders
                           </div>
-                          <p className="text-2xl font-bold text-slate-900 mt-2 tabular-nums">0</p>
+                          <p className="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
+                            {user?.totalOrders ?? userOrders.length ?? 0}
+                          </p>
                         </div>
                         <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
                           <div className="flex items-center gap-2 text-slate-500 text-xs font-medium uppercase tracking-wide">
                             <Wallet className="w-3.5 h-3.5" />
                             Spent
                           </div>
-                          <p className="text-2xl font-bold text-slate-900 mt-2 tabular-nums">$0</p>
+                          <p className="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
+                            ${user?.totalSpent ?? 0}
+                          </p>
                         </div>
                         <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
                           <div className="flex items-center gap-2 text-amber-700 text-xs font-medium uppercase tracking-wide">
                             <Award className="w-3.5 h-3.5" />
                             Points
                           </div>
-                          <p className="text-2xl font-bold text-amber-700 mt-2 tabular-nums">0</p>
+                          <p className="text-2xl font-bold text-amber-700 mt-2 tabular-nums">
+                            {user?.loyaltyPoints ?? 0}
+                          </p>
                         </div>
                       </div>
                     </>
@@ -511,27 +582,256 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* ORDERS TAB */}
+            {/* ORDERS TAB (Flipkart / Meesho Style) */}
             {activeTab === "orders" && (
-              <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-50 flex items-center justify-center">
-                    <ShoppingBag className="w-8 h-8 text-slate-400" />
+              <div className="space-y-6">
+                {/* Search & Filter Header */}
+                <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 space-y-4">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <h3 className="text-lg font-bold text-slate-900 self-start sm:self-auto">
+                      My Orders ({userOrders.length})
+                    </h3>
+
+                    {/* Search Bar */}
+                    <div className="relative w-full sm:w-72">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search by Order ID or Item..."
+                        value={orderSearchQuery}
+                        onChange={(e) => setOrderSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 text-xs rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition"
+                      />
+                    </div>
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-1">
-                    No orders yet
-                  </h3>
-                  <p className="text-slate-500 mb-6 text-sm">
-                    Start shopping to see your orders here
-                  </p>
-                  <Link
-                    href="/product"
-                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    Browse Products
-                  </Link>
+
+                  {/* Status Filter Tabs */}
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                    {[
+                      { id: "all", label: "All Orders" },
+                      { id: "active", label: "In-Transit / Active" },
+                      { id: "delivered", label: "Delivered" },
+                      { id: "cancelled", label: "Cancelled" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setOrderFilterStatus(tab.id)}
+                        className={`px-3.5 py-1.5 rounded-lg font-medium whitespace-nowrap transition ${
+                          orderFilterStatus === tab.id
+                            ? "bg-emerald-600 text-white shadow-sm"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Orders List / Empty State */}
+                {ordersLoading ? (
+                  <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-12 text-center">
+                    <Loader className="w-8 h-8 text-emerald-600 animate-spin mx-auto mb-2" />
+                    <p className="text-xs text-slate-500 font-medium">Loading your orders...</p>
+                  </div>
+                ) : userOrders.length === 0 ? (
+                  <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-10 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-50 flex items-center justify-center">
+                      <ShoppingBag className="w-8 h-8 text-slate-400" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 mb-1">
+                      No orders found
+                    </h3>
+                    <p className="text-slate-500 mb-6 text-xs max-w-sm mx-auto">
+                      {orderSearchQuery || orderFilterStatus !== "all"
+                        ? "No orders match your current search or filter criteria."
+                        : "You haven't placed any orders yet. Start exploring our catalogue!"}
+                    </p>
+                    <Link
+                      href="/product"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition text-xs shadow-sm"
+                    >
+                      <ShoppingBag className="w-4 h-4" />
+                      Browse Products
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {userOrders.map((order, orderIdx) => {
+                      const isCancelled = order.orderStatus === "cancelled";
+                      const isDelivered = order.orderStatus === "delivered";
+                      const canCancel = ["placed", "confirmed", "processing"].includes(
+                        order.orderStatus
+                      );
+
+                      const orderDate = new Date(order.createdAt).toLocaleDateString(
+                        "en-US",
+                        {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        }
+                      );
+
+                      const statusBadgeClass = isDelivered
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : isCancelled
+                        ? "bg-rose-50 text-rose-700 border-rose-200"
+                        : "bg-blue-50 text-blue-700 border-blue-200";
+
+                      return (
+                        <motion.div
+                          key={order._id}
+                          initial={{ opacity: 0, y: 14 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: Math.min(orderIdx * 0.06, 0.4) }}
+                          whileHover={{ y: -2 }}
+                          className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow"
+                        >
+                          {/* Order Card Top Banner */}
+                          <div className="bg-slate-50/75 px-5 py-3.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                            <div className="flex flex-wrap items-center gap-4 text-slate-600">
+                              <div>
+                                <span className="text-slate-400 block text-[10px] uppercase font-bold">
+                                  Order Placed
+                                </span>
+                                <span className="font-semibold text-slate-800">{orderDate}</span>
+                              </div>
+                              <div className="hidden sm:block h-6 w-px bg-slate-200" />
+                              <div>
+                                <span className="text-slate-400 block text-[10px] uppercase font-bold">
+                                  Total Amount
+                                </span>
+                                <span className="font-bold text-slate-900 font-mono">
+                                  ${order.pricing?.totalAmount?.toFixed(2)}
+                                </span>
+                              </div>
+                              <div className="hidden sm:block h-6 w-px bg-slate-200" />
+                              <div>
+                                <span className="text-slate-400 block text-[10px] uppercase font-bold">
+                                  Ship To
+                                </span>
+                                <span className="font-medium text-slate-700">
+                                  {order.shippingAddress?.fullName}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <span className="font-mono text-slate-500 font-semibold text-xs">
+                                #{order.orderNumber}
+                              </span>
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusBadgeClass}`}
+                              >
+                                {order.orderStatus?.replace("_", " ")}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Items in this Order */}
+                          <div className="p-5 space-y-4">
+                            {order.items.map((item, itemIdx) => {
+                              const variantStr = [item.selectedColor, item.selectedSize]
+                                .filter(Boolean)
+                                .join(" • ");
+
+                              return (
+                                <div
+                                  key={item._id || itemIdx}
+                                  className="flex items-start gap-4 pb-4 border-b border-slate-100 last:border-0 last:pb-0"
+                                >
+                                  <img
+                                    src={item.image || "/placeholder.jpg"}
+                                    alt={item.name}
+                                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-slate-200 shrink-0 bg-slate-50"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-slate-900 font-bold text-sm line-clamp-1">
+                                      {item.name}
+                                    </h4>
+                                    {variantStr && (
+                                      <p className="text-xs text-slate-500 mt-0.5">
+                                        Variant: {variantStr}
+                                      </p>
+                                    )}
+                                    <p className="text-xs text-slate-500 mt-1">
+                                      Qty: <strong className="text-slate-800">{item.quantity}</strong> × $
+                                      {(item.price || 0).toFixed(2)}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-sm font-bold text-slate-900">
+                                      ${((item.price || 0) * item.quantity).toFixed(2)}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Card Footer Actions */}
+                          <div className="bg-slate-50/40 px-5 py-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                            <div className="flex items-center gap-2 text-slate-500">
+                              <Truck className="w-4 h-4 text-emerald-600" />
+                              <span>
+                                {isDelivered ? (
+                                  <strong className="text-emerald-700 font-semibold">
+                                    Delivered Package
+                                  </strong>
+                                ) : isCancelled ? (
+                                  <strong className="text-rose-700 font-semibold">
+                                    Order Cancelled
+                                  </strong>
+                                ) : (
+                                  <>
+                                    Status:{" "}
+                                    <strong className="text-slate-800 capitalize">
+                                      {order.orderStatus?.replace("_", " ")}
+                                    </strong>
+                                  </>
+                                )}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {/* Track Order Button */}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedOrderForTracking(order)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-semibold transition"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                Track Order
+                              </button>
+
+                              {/* Invoice Button */}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedOrderForInvoice(order)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 font-medium transition"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                Invoice
+                              </button>
+
+                              {/* Cancel Order Button */}
+                              {canCancel && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOrderForCancel(order)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 font-semibold transition"
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1081,6 +1381,57 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Track Order Modal / Drawer */}
+      {selectedOrderForTracking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+              <div>
+                <h3 className="font-bold text-slate-900 text-base">
+                  Track Shipment — #{selectedOrderForTracking.orderNumber}
+                </h3>
+                <p className="text-xs text-slate-500">Live milestone updates & courier tracking</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedOrderForTracking(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <OrderTracker order={selectedOrderForTracking} />
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedOrderForTracking(null)}
+                className="px-5 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition"
+              >
+                Close Tracker
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tax Invoice Modal */}
+      <InvoiceModal
+        isOpen={Boolean(selectedOrderForInvoice)}
+        onClose={() => setSelectedOrderForInvoice(null)}
+        order={selectedOrderForInvoice}
+      />
+
+      {/* Cancel Order Modal */}
+      <CancelOrderModal
+        isOpen={Boolean(selectedOrderForCancel)}
+        onClose={() => setSelectedOrderForCancel(null)}
+        onConfirm={handleConfirmCancelOrder}
+        orderNumber={selectedOrderForCancel?.orderNumber}
+        loading={isCancellingOrder}
+      />
     </div>
   );
 }
