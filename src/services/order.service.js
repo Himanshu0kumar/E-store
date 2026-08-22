@@ -3,6 +3,7 @@ import Order from "@/models/Order";
 import Product from "@/models/Product";
 import Cart from "@/models/Cart";
 import User from "@/models/User";
+import InventoryLog from "@/models/InventoryLog";
 
 /**
  * Generate a unique readable Flipkart-style order number.
@@ -147,11 +148,31 @@ export async function createOrder({
       },
     });
 
-    // 1. Decrement product stock quantities
+    // 1. Decrement product stock quantities & record inventory audit logs
     for (const item of orderItems) {
-      await Product.findByIdAndUpdate(item.productId, {
-        $inc: { quantity: -item.quantity },
-      });
+      const updatedProduct = await Product.findByIdAndUpdate(
+        item.productId,
+        { $inc: { quantity: -item.quantity } },
+        { new: false } // get previous product
+      );
+
+      if (updatedProduct) {
+        const previousStock = Number(updatedProduct.quantity) || 0;
+        const newStock = Math.max(0, previousStock - item.quantity);
+        await InventoryLog.create({
+          product: item.productId,
+          productName: item.name || updatedProduct.name,
+          productSKU: item.sku || updatedProduct.productSKU || "",
+          changeType: "order_deducted",
+          quantityChange: -item.quantity,
+          previousStock,
+          newStock,
+          reason: `Order Placed: ${orderNumber}`,
+          referenceOrder: newOrder._id,
+          referenceOrderNumber: orderNumber,
+          performedBy: "Customer Checkout",
+        });
+      }
     }
 
     // 2. Increment user totalOrders and totalSpent
@@ -383,6 +404,38 @@ export async function updateOrderStatus(orderId, {
           order.paymentInfo.paidAt = new Date();
         }
       }
+
+      // Auto-restock on order cancellation or return if not already cancelled/returned
+      if (
+        (status === "cancelled" || status === "returned") &&
+        !["cancelled", "returned"].includes(previousStatus)
+      ) {
+        const changeType = status === "returned" ? "return_restock" : "order_cancelled_restock";
+        for (const item of order.items) {
+          const updatedProduct = await Product.findByIdAndUpdate(
+            item.productId,
+            { $inc: { quantity: item.quantity } },
+            { new: false }
+          );
+          if (updatedProduct) {
+            const previousStock = Number(updatedProduct.quantity) || 0;
+            const newStock = previousStock + item.quantity;
+            await InventoryLog.create({
+              product: item.productId,
+              productName: item.name || updatedProduct.name,
+              productSKU: item.sku || updatedProduct.productSKU || "",
+              changeType,
+              quantityChange: item.quantity,
+              previousStock,
+              newStock,
+              reason: `Order ${status === "returned" ? "Returned" : "Cancelled"}: ${order.orderNumber}`,
+              referenceOrder: order._id,
+              referenceOrderNumber: order.orderNumber,
+              performedBy: "Admin Status Update",
+            });
+          }
+        }
+      }
     }
 
     if (courierInfo) {
@@ -452,11 +505,30 @@ export async function cancelOrder(orderId, userId, { reason = "Customer request"
 
     await order.save();
 
-    // Restock product inventory
+    // Restock product inventory & create audit logs
     for (const item of order.items) {
-      await Product.findByIdAndUpdate(item.productId, {
-        $inc: { quantity: item.quantity },
-      });
+      const updatedProduct = await Product.findByIdAndUpdate(
+        item.productId,
+        { $inc: { quantity: item.quantity } },
+        { new: false }
+      );
+      if (updatedProduct) {
+        const previousStock = Number(updatedProduct.quantity) || 0;
+        const newStock = previousStock + item.quantity;
+        await InventoryLog.create({
+          product: item.productId,
+          productName: item.name || updatedProduct.name,
+          productSKU: item.sku || updatedProduct.productSKU || "",
+          changeType: "order_cancelled_restock",
+          quantityChange: item.quantity,
+          previousStock,
+          newStock,
+          reason: `Order Cancelled by ${cancelledBy}: ${reason}`,
+          referenceOrder: order._id,
+          referenceOrderNumber: order.orderNumber,
+          performedBy: cancelledBy === "admin" ? "Admin" : "User Cancellation",
+        });
+      }
     }
 
     return order;

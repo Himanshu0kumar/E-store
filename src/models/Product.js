@@ -35,6 +35,7 @@ const productSchema = new mongoose.Schema(
     productCode: { type: String },
     productSKU: { type: String },
     quantity: { type: Number, default: 0 },
+    lowStockThreshold: { type: Number, default: 5 },
     category: { type: String, required: true },
     brand: { type: String },
     tags: { type: String },
