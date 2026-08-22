@@ -414,12 +414,12 @@ export default function ProductDetailPage({ params }) {
               <div className="space-y-1">
                 <div className="flex items-baseline gap-3">
                   <span className="text-3xl font-black text-slate-900">
-                    ${effectivePrice.toFixed(2)}
+                    ₹{effectivePrice.toFixed(2)}
                   </span>
                   {discountPercent > 0 && (
                     <>
                       <span className="text-base text-slate-400 line-through">
-                        ${regularPrice.toFixed(2)}
+                        ₹{regularPrice.toFixed(2)}
                       </span>
                       <span className="text-xs font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg">
                         {discountPercent}% OFF
@@ -428,7 +428,7 @@ export default function ProductDetailPage({ params }) {
                   )}
                 </div>
                 <p className="text-xs text-slate-400">
-                  Inclusive of all taxes. Free shipping on orders over $50.
+                  Inclusive of all taxes. Free shipping on orders over ₹500.
                 </p>
               </div>
 

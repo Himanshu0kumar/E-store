@@ -168,10 +168,10 @@ export default function InvoiceModal({ isOpen, onClose, order }) {
                           {item.quantity}
                         </td>
                         <td className="py-3 text-right text-slate-600">
-                          ${(item.price || 0).toFixed(2)}
+                          ₹{(item.price || 0).toFixed(2)}
                         </td>
                         <td className="py-3 text-right font-bold text-slate-900">
-                          ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                          ₹{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                         </td>
                       </tr>
                     );
@@ -186,31 +186,31 @@ export default function InvoiceModal({ isOpen, onClose, order }) {
                 <div className="flex justify-between text-slate-600">
                   <span>Subtotal:</span>
                   <span className="font-medium text-slate-800">
-                    ${(pricing.subtotal || 0).toFixed(2)}
+                    ₹{(pricing.subtotal || 0).toFixed(2)}
                   </span>
                 </div>
                 {pricing.discount > 0 && (
                   <div className="flex justify-between text-emerald-600">
                     <span>Discount {pricing.couponCode ? `(${pricing.couponCode})` : ""}:</span>
-                    <span>-${(pricing.discount || 0).toFixed(2)}</span>
+                    <span>-₹{(pricing.discount || 0).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-slate-600">
                   <span>Shipping Fee:</span>
                   <span className="font-medium text-slate-800">
-                    {pricing.shippingFee === 0 ? "Free" : `$${(pricing.shippingFee || 0).toFixed(2)}`}
+                    {pricing.shippingFee === 0 ? "Free" : `₹${(pricing.shippingFee || 0).toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>Estimated Tax (8%):</span>
                   <span className="font-medium text-slate-800">
-                    ${(pricing.tax || 0).toFixed(2)}
+                    ₹{(pricing.tax || 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-bold text-slate-900 pt-2 border-t border-slate-200">
                   <span>Total Amount Paid:</span>
                   <span className="text-emerald-700 font-extrabold">
-                    ${(pricing.totalAmount || 0).toFixed(2)}
+                    ₹{(pricing.totalAmount || 0).toFixed(2)}
                   </span>
                 </div>
               </div>

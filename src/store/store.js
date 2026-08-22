@@ -12,6 +12,7 @@ import orderReducer from "./slices/orderSlice";
 import userReducer from "./slices/userSlice";
 import reviewReducer from "./slices/reviewSlice";
 import inventoryReducer from "./slices/inventorySlice";
+import dashboardReducer from "./slices/dashboardSlice";
 
 export const store = configureStore({
   reducer: {
@@ -28,5 +29,6 @@ export const store = configureStore({
     users: userReducer,
     reviews: reviewReducer,
     inventory: inventoryReducer,
+    dashboard: dashboardReducer,
   },
 });

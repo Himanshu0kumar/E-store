@@ -463,7 +463,7 @@ export default function DashboardPage() {
                             Spent
                           </div>
                           <p className="text-2xl font-bold text-slate-900 mt-2 tabular-nums">
-                            ${user?.totalSpent ?? 0}
+                            ₹{user?.totalSpent ?? 0}
                           </p>
                         </div>
                         <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
@@ -703,7 +703,7 @@ export default function DashboardPage() {
                                   Total Amount
                                 </span>
                                 <span className="font-bold text-slate-900 font-mono">
-                                  ${order.pricing?.totalAmount?.toFixed(2)}
+                                  ₹{order.pricing?.totalAmount?.toFixed(2)}
                                 </span>
                               </div>
                               <div className="hidden sm:block h-6 w-px bg-slate-200" />
@@ -756,13 +756,13 @@ export default function DashboardPage() {
                                       </p>
                                     )}
                                     <p className="text-xs text-slate-500 mt-1">
-                                      Qty: <strong className="text-slate-800">{item.quantity}</strong> × $
+                                      Qty: <strong className="text-slate-800">{item.quantity}</strong> × ₹
                                       {(item.price || 0).toFixed(2)}
                                     </p>
                                   </div>
                                   <div className="text-right">
                                     <span className="text-sm font-bold text-slate-900">
-                                      ${((item.price || 0) * item.quantity).toFixed(2)}
+                                      ₹{((item.price || 0) * item.quantity).toFixed(2)}
                                     </span>
                                   </div>
                                 </div>
@@ -880,7 +880,7 @@ export default function DashboardPage() {
                               {item.productId?.name}
                             </p>
                             <p className="text-emerald-600 font-bold mt-1">
-                              ${item.productId?.regularPrice}
+                              ₹{item.productId?.regularPrice}
                             </p>
                           </div>
                         </div>

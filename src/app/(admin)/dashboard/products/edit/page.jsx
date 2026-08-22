@@ -417,14 +417,14 @@ export default function EditProductPage() {
         >
           <PrefixInput
             label="Regular price"
-            prefix="$"
+            prefix="₹"
             value={form.regularPrice}
             onChange={(val) => setForm({ ...form, regularPrice: val })}
           />
 
           <PrefixInput
             label="Sale price"
-            prefix="$"
+            prefix="₹"
             value={form.salePrice}
             onChange={(val) => setForm({ ...form, salePrice: val })}
           />

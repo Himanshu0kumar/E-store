@@ -6,7 +6,7 @@ import { TrendingUp, Users, ShoppingBag, DollarSign, ArrowUpRight, ArrowDownRigh
 const analyticsStats = [
   {
     title: "Total Revenue",
-    value: "$124,560.00",
+    value: "₹124,560.00",
     change: "+14.2%",
     isPositive: true,
     icon: DollarSign,

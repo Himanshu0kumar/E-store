@@ -232,7 +232,7 @@ export default function CartPage() {
               {amountToFreeShipping > 0 ? (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
                   <p className="text-sm text-emerald-800">
-                    Add <span className="font-semibold">${amountToFreeShipping.toFixed(2)}</span> more
+                    Add <span className="font-semibold">₹{amountToFreeShipping.toFixed(2)}</span> more
                     for free shipping
                   </p>
                   <div className="w-full h-1.5 bg-emerald-100 rounded-full mt-2 overflow-hidden">
@@ -310,7 +310,7 @@ export default function CartPage() {
                           </button>
                         </div>
                         <p className="text-slate-900 font-bold tabular-nums">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          ₹{(item.price * item.quantity).toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -364,23 +364,23 @@ export default function CartPage() {
                 <div className="space-y-2.5 text-sm">
                   <div className="flex justify-between text-slate-600">
                     <span>Subtotal</span>
-                    <span className="tabular-nums">${calculatedSubtotal.toFixed(2)}</span>
+                    <span className="tabular-nums">₹{calculatedSubtotal.toFixed(2)}</span>
                   </div>
                   {appliedPromo && (
                     <div className="flex justify-between text-emerald-600">
                       <span>Discount ({appliedPromo.percentOff}%)</span>
-                      <span className="tabular-nums">-${calculatedDiscount.toFixed(2)}</span>
+                      <span className="tabular-nums">-₹{calculatedDiscount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-slate-600">
                     <span>Shipping</span>
                     <span className="tabular-nums">
-                      {calculatedShipping === 0 ? "Free" : `$${calculatedShipping.toFixed(2)}`}
+                      {calculatedShipping === 0 ? "Free" : `₹${calculatedShipping.toFixed(2)}`}
                     </span>
                   </div>
                   <div className="flex justify-between text-slate-600">
                     <span>Tax</span>
-                    <span className="tabular-nums">${calculatedTax.toFixed(2)}</span>
+                    <span className="tabular-nums">₹{calculatedTax.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -389,7 +389,7 @@ export default function CartPage() {
                 <div className="flex justify-between items-baseline mb-6">
                   <span className="text-slate-900 font-semibold">Total</span>
                   <span className="text-2xl font-bold text-slate-900 tabular-nums">
-                    ${calculatedTotal.toFixed(2)}
+                    ₹{calculatedTotal.toFixed(2)}
                   </span>
                 </div>
 

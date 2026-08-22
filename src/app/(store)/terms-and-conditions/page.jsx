@@ -25,7 +25,7 @@ const SECTIONS = [
     title: "3. Orders and Payment",
     body: [
       "All orders are subject to acceptance and availability. We reserve the right to refuse or cancel any order for reasons including suspected fraud or pricing errors.",
-      "Prices are listed in USD and may change without notice, though changes won't affect orders already placed.",
+      "Prices are listed in INR (₹) and may change without notice, though changes won't affect orders already placed.",
     ],
   },
   {

@@ -269,10 +269,10 @@ export default function AdminOrderDetailPage() {
                           {item.quantity}
                         </td>
                         <td className="py-3 text-right text-slate-600">
-                          ${(item.price || 0).toFixed(2)}
+                          ₹{(item.price || 0).toFixed(2)}
                         </td>
                         <td className="py-3 text-right font-bold text-slate-900 font-mono">
-                          ${((item.price || 0) * item.quantity).toFixed(2)}
+                          ₹{((item.price || 0) * item.quantity).toFixed(2)}
                         </td>
                       </tr>
                     );
@@ -287,13 +287,13 @@ export default function AdminOrderDetailPage() {
                 <div className="flex justify-between text-slate-600">
                   <span>Subtotal:</span>
                   <span className="font-semibold text-slate-800">
-                    ${(order.pricing?.subtotal || 0).toFixed(2)}
+                    ₹{(order.pricing?.subtotal || 0).toFixed(2)}
                   </span>
                 </div>
                 {order.pricing?.discount > 0 && (
                   <div className="flex justify-between text-emerald-600">
                     <span>Discount:</span>
-                    <span>-${(order.pricing?.discount || 0).toFixed(2)}</span>
+                    <span>-₹{(order.pricing?.discount || 0).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-slate-600">
@@ -301,19 +301,19 @@ export default function AdminOrderDetailPage() {
                   <span className="font-semibold text-slate-800">
                     {order.pricing?.shippingFee === 0
                       ? "Free"
-                      : `$${(order.pricing?.shippingFee || 0).toFixed(2)}`}
+                      : `₹${(order.pricing?.shippingFee || 0).toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>Tax (8%):</span>
                   <span className="font-semibold text-slate-800">
-                    ${(order.pricing?.tax || 0).toFixed(2)}
+                    ₹{(order.pricing?.tax || 0).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-bold text-slate-900 pt-2 border-t border-slate-200">
                   <span>Total Amount:</span>
                   <span className="text-emerald-700 font-extrabold font-mono">
-                    ${(order.pricing?.totalAmount || 0).toFixed(2)}
+                    ₹{(order.pricing?.totalAmount || 0).toFixed(2)}
                   </span>
                 </div>
               </div>

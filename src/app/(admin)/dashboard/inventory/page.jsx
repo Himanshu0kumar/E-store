@@ -430,7 +430,7 @@ export default function InventoryOverviewPage() {
           </div>
           <div className="mt-3 flex items-baseline gap-1">
             <span className="text-2xl font-black text-slate-900 truncate">
-              ${stats?.totalValuation?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? "0.00"}
+              ₹{stats?.totalValuation?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? "0.00"}
             </span>
           </div>
           <div className="mt-2 text-[11px] text-indigo-600 font-medium">
@@ -689,10 +689,10 @@ export default function InventoryOverviewPage() {
                       {/* Price & Valuation */}
                       <td className="py-4 px-3">
                         <div className="font-extrabold text-slate-900">
-                          ${(product.effectivePrice || product.regularPrice || 0).toFixed(2)}
+                          ₹{(product.effectivePrice || product.regularPrice || 0).toFixed(2)}
                         </div>
                         <div className="text-[11px] text-slate-400 font-medium">
-                          Valuation: ${(product.valuation || 0).toFixed(2)}
+                          Valuation: ₹{(product.valuation || 0).toFixed(2)}
                         </div>
                       </td>
 

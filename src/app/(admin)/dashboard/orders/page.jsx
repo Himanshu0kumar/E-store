@@ -198,7 +198,7 @@ export default function AdminOrdersPage() {
           },
           {
             label: "Revenue",
-            value: `$${(stats.totalRevenue ?? 0).toLocaleString()}`,
+            value: `₹${(stats.totalRevenue ?? 0).toLocaleString()}`,
             icon: DollarSign,
             color: "text-emerald-800 font-mono",
             bg: "bg-emerald-50/70",
@@ -395,7 +395,7 @@ export default function AdminOrdersPage() {
 
                       {/* Amount */}
                       <td className="py-3.5 px-4 font-bold text-slate-900 font-mono">
-                        ${order.pricing?.totalAmount?.toFixed(2)}
+                        ₹{order.pricing?.totalAmount?.toFixed(2)}
                       </td>
 
                       {/* Payment Badge */}

@@ -392,7 +392,7 @@ export default function UserDetailsPage() {
             Lifetime Spend
           </p>
           <p className="text-2xl font-black text-slate-900 font-mono mt-0.5">
-            ${(user.totalSpent || 0).toFixed(2)}
+            ₹{(user.totalSpent || 0).toFixed(2)}
           </p>
         </div>
 
@@ -593,7 +593,7 @@ export default function UserDetailsPage() {
                         Preferred Currency
                       </span>
                       <span className="font-mono font-bold text-slate-800">
-                        {user.preferences?.currency || "USD"}
+                        {user.preferences?.currency || "INR"}
                       </span>
                     </div>
                   </div>
@@ -649,7 +649,7 @@ export default function UserDetailsPage() {
                             {order.items?.length || 1} items
                           </td>
                           <td className="py-3.5 px-4 font-bold font-mono text-slate-900">
-                            ${(order.pricing?.totalAmount || 0).toFixed(2)}
+                            ₹{(order.pricing?.totalAmount || 0).toFixed(2)}
                           </td>
                           <td className="py-3.5 px-4">
                             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">

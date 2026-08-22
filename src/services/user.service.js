@@ -230,7 +230,7 @@ export const createUser = async (userData) => {
     preferences: {
       newsletter: preferences.newsletter ?? true,
       notifications: preferences.notifications ?? true,
-      currency: preferences.currency || "USD",
+      currency: preferences.currency || "INR",
       language: preferences.language || "en",
     },
   });

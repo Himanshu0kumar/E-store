@@ -66,7 +66,7 @@ const userSchema = new mongoose.Schema(
     preferences: {
       newsletter: { type: Boolean, default: true },
       notifications: { type: Boolean, default: true },
-      currency: { type: String, default: "USD" },
+      currency: { type: String, default: "INR" },
       language: { type: String, default: "en" },
     },
 

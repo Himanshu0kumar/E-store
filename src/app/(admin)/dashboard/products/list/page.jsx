@@ -414,9 +414,9 @@ export default function ProductsListPage() {
                         {getStockBadge(product.quantity)}
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-sm font-semibold text-slate-900">
-                          ${Number(product.regularPrice).toFixed(2)}
-                        </p>
+                        <span className="text-sm font-bold text-slate-800">
+                          ₹{Number(product.regularPrice).toFixed(2)}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         {getPublishBadge(product.publish)}

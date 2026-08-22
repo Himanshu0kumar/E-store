@@ -491,7 +491,7 @@ export default function UsersListPage() {
               <DollarSign className="w-5 h-5" />
             </div>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100/60 text-amber-800">
-              Avg ${(userStats?.avgSpend || 0).toFixed(0)}/user
+              Avg ₹{(userStats?.avgSpend || 0).toFixed(0)}/user
             </span>
           </div>
           <div className="mt-4">
@@ -499,7 +499,7 @@ export default function UsersListPage() {
               Total Customer Spend
             </p>
             <p className="text-2xl font-black text-slate-900 mt-1 font-mono">
-              {statsLoading ? "..." : `$${(userStats?.totalSpend || 0).toLocaleString()}`}
+              {statsLoading ? "..." : `₹${(userStats?.totalSpend || 0).toLocaleString()}`}
             </p>
           </div>
           <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500">
@@ -819,7 +819,7 @@ export default function UsersListPage() {
                     {/* Orders & Spend */}
                     <td className="py-3.5 px-4">
                       <div className="font-semibold text-slate-800 font-mono">
-                        ${(user.totalSpent || 0).toFixed(2)}
+                        ₹{(user.totalSpent || 0).toFixed(2)}
                       </div>
                       <div className="text-[11px] text-slate-500">
                         {user.totalOrders || 0}{" "}
@@ -914,7 +914,7 @@ export default function UsersListPage() {
                       Total Spent
                     </span>
                     <span className="font-bold font-mono text-slate-800">
-                      ${(user.totalSpent || 0).toFixed(2)}
+                      ₹{(user.totalSpent || 0).toFixed(2)}
                     </span>
                   </div>
                   <div>

@@ -681,7 +681,7 @@ export default function CheckoutPage() {
                       <span className="text-slate-900 font-semibold text-sm">
                         {subtotal >= FREE_SHIPPING_THRESHOLD
                           ? "Free"
-                          : `$${SHIPPING_FLAT_RATE.toFixed(2)}`}
+                          : `₹${SHIPPING_FLAT_RATE.toFixed(2)}`}
                       </span>
                     </label>
 
@@ -707,7 +707,7 @@ export default function CheckoutPage() {
                           <p className="text-slate-500 text-xs">1–2 business days</p>
                         </div>
                       </div>
-                      <span className="text-slate-900 font-semibold text-sm">$14.99</span>
+                      <span className="text-slate-900 font-semibold text-sm">₹149.00</span>
                     </label>
                   </div>
 
@@ -847,7 +847,7 @@ export default function CheckoutPage() {
                           Placing Order...
                         </>
                       ) : (
-                        `Place Order — $${total.toFixed(2)}`
+                        `Place Order — ₹${total.toFixed(2)}`
                       )}
                     </button>
                   </div>
@@ -872,7 +872,7 @@ export default function CheckoutPage() {
                       </p>
                     </div>
                     <span className="text-slate-900 font-medium tabular-nums shrink-0">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      ₹{(item.price * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -883,17 +883,17 @@ export default function CheckoutPage() {
               <div className="space-y-2.5 text-sm">
                 <div className="flex justify-between text-slate-600">
                   <span>Subtotal</span>
-                  <span className="tabular-nums">${subtotal.toFixed(2)}</span>
+                  <span className="tabular-nums">₹{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>Shipping</span>
                   <span className="tabular-nums">
-                    {shippingCost === 0 ? "Free" : `$${shippingCost.toFixed(2)}`}
+                    {shippingCost === 0 ? "Free" : `₹${shippingCost.toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>Tax</span>
-                  <span className="tabular-nums">${tax.toFixed(2)}</span>
+                  <span className="tabular-nums">₹{tax.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -902,7 +902,7 @@ export default function CheckoutPage() {
               <div className="flex justify-between items-baseline">
                 <span className="text-slate-900 font-semibold">Total</span>
                 <span className="text-2xl font-bold text-slate-900 tabular-nums">
-                  ${total.toFixed(2)}
+                  ₹{total.toFixed(2)}
                 </span>
               </div>
             </div>
