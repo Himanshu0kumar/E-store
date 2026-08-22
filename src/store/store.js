@@ -10,6 +10,7 @@ import blogReducer from "./slices/blogSlice";
 import blogCategoryReducer from "./slices/blogCategorySlice";
 import orderReducer from "./slices/orderSlice";
 import userReducer from "./slices/userSlice";
+import reviewReducer from "./slices/reviewSlice";
 
 export const store = configureStore({
   reducer: {
@@ -24,5 +25,6 @@ export const store = configureStore({
     blogCategory: blogCategoryReducer,
     orders: orderReducer,
     users: userReducer,
+    reviews: reviewReducer,
   },
 });

@@ -51,6 +51,7 @@ const managementItems = [
     ],
   },
   { label: "Blog", icon: "chat", href: "/dashboard/blog" },
+  { label: "Reviews", icon: "star", href: "/dashboard/reviews" },
   { label: "Job", icon: "briefcase", href: "/dashboard/jobs" },
   { label: "Tour", icon: "compass", href: "/dashboard/tours" },
   { label: "File manager", icon: "folder", href: "/dashboard/files" },
@@ -195,6 +196,12 @@ function SidebarIcon({ type, className = "h-4 w-4" }) {
       return (
         <svg {...common}>
           <path d="M6 18 3 21V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H6Z" />
+        </svg>
+      );
+    case "star":
+      return (
+        <svg {...common}>
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
         </svg>
       );
     default:

@@ -41,7 +41,7 @@ export default function ProductDetailPage({ params }) {
   const { user } = useSelector((state) => state.auth || {});
   const currentUser = user?.user || user;
 
-  const { selectedProduct, items: allProducts, loading } = useSelector(
+  const { selectedProduct, items: allProducts, loading, error } = useSelector(
     (state) => state.products
   );
   const { items: cartItems } = useSelector((state) => state.cart);
@@ -177,7 +177,14 @@ export default function ProductDetailPage({ params }) {
     })
     .slice(0, 4);
 
-  if (loading) {
+  const isCurrentProductLoaded =
+    selectedProduct &&
+    (String(selectedProduct._id) === String(productId) ||
+      String(selectedProduct.id) === String(productId));
+
+  const isLoadingProduct = loading || (!isCurrentProductLoaded && !error);
+
+  if (isLoadingProduct) {
     return (
       <div className="min-h-screen bg-[#F8F7F4] flex flex-col">
         <Header />

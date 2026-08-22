@@ -73,6 +73,7 @@ const productSchema = new mongoose.Schema(
 
     publish: { type: Boolean, default: true },
     rating: { type: Number, default: 0 },
+    reviewCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
