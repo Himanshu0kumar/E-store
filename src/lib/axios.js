@@ -3,16 +3,22 @@ import axios from "axios";
 /**
  * Centralized Axios instance for all API calls.
  *
- * - baseURL is intentionally left empty so requests use relative paths
- *   (e.g. "/api/auth/login"). This makes the app work identically on
- *   localhost:3000 during development and on the deployed Vercel domain
- *   in production — no environment variable required.
+ * - In client-side browser context, baseURL defaults to relative path ("")
+ *   so requests automatically target the current origin (localhost during dev,
+ *   Vercel domain in production), eliminating cross-origin CORS blocks.
  *
  * - withCredentials ensures httpOnly cookies (access + refresh tokens)
  *   are sent and received automatically by the browser.
  */
+const getBaseURL = () => {
+  if (typeof window !== "undefined") {
+    return "";
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "";
+};
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "",
+  baseURL: getBaseURL(),
   timeout: 15000, // 15-second timeout to avoid hanging requests
   withCredentials: true,
   headers: {
@@ -45,10 +51,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const customError = {
-      message: error.response?.data?.error
-        || error.response?.data?.message
-        || error.message
-        || "Something went wrong",
+      message:
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Something went wrong",
       status: error.response?.status || 500,
     };
 

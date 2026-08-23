@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser, getUserProfile } from "@/store/slices/authSlice";
-import { MoreVertical, ChevronDown, ChevronRight, LogOut, ShieldCheck, Menu, X } from "lucide-react";
+import { MoreVertical, ChevronDown, ChevronRight, LogOut, ShieldCheck, Menu, X, Settings as SettingsIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const overviewItems = [
   { label: "Dashboard", icon: "home", href: "/dashboard" },
   { label: "Analytics", icon: "chart", href: "/dashboard/analytics" },
+  { label: "Settings", icon: "gear", href: "/dashboard/settings" },
 ];
 
 const managementItems = [
@@ -112,6 +113,13 @@ function SidebarIcon({ type, className = "h-4 w-4" }) {
           <path d="M19 10v8" />
           <path d="M2 20h20" />
           <path d="M12 3 3 7v3h18V7l-9-4Z" />
+        </svg>
+      );
+    case "gear":
+      return (
+        <svg {...common}>
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+          <circle cx="12" cy="12" r="3" />
         </svg>
       );
     case "plane":
@@ -626,6 +634,17 @@ export default function DashboardLayout({ children }) {
                               Administrator
                             </span>
                           </div>
+                        </div>
+
+                        <div className="py-2 border-b border-slate-100 space-y-1">
+                          <Link
+                            href="/dashboard/settings"
+                            onClick={() => setDropdownOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+                          >
+                            <SettingsIcon className="w-4 h-4 text-slate-500" />
+                            Account & Store Settings
+                          </Link>
                         </div>
 
                         <div className="pt-2">
