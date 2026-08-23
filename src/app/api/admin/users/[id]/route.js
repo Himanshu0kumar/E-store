@@ -5,10 +5,14 @@ import {
   updateUser,
   deleteUser,
 } from "@/services/user.service";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
 // GET /api/admin/users/[id] - Fetch single user details with order history
 export async function GET(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const resolvedParams = await params;
     const { id } = resolvedParams;
@@ -30,6 +34,9 @@ export async function GET(req, { params }) {
 // PUT /api/admin/users/[id] - Update user details
 export async function PUT(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const resolvedParams = await params;
     const { id } = resolvedParams;
@@ -53,6 +60,9 @@ export async function PUT(req, { params }) {
 // DELETE /api/admin/users/[id] - Delete user
 export async function DELETE(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const resolvedParams = await params;
     const { id } = resolvedParams;

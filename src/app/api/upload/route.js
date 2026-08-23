@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 export async function POST(req) {
   try {
+    const userId = await getAuthUser(req);
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Please log in to upload files" },
+        { status: 401 }
+      );
+    }
+
     const formData = await req.formData();
     const files = formData.getAll("files"); // supports multiple files
 

@@ -4,10 +4,14 @@ import {
   getAllBlogPostsAdmin,
   createBlogPost,
 } from "@/services/blog.service";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
 // GET all blog posts for admin
 export async function GET(req) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const { searchParams } = new URL(req.url);
 
@@ -31,6 +35,9 @@ export async function GET(req) {
 // POST create blog post
 export async function POST(req) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const body = await req.json();
     const post = await createBlogPost(body);

@@ -4,10 +4,14 @@ import {
   getInventoryOverview,
   updateProductStock,
 } from "@/services/inventory.service";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
 // GET inventory overview & statistics
 export async function GET(req) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const { searchParams } = new URL(req.url);
 
@@ -40,6 +44,9 @@ export async function GET(req) {
 // PATCH adjust product stock
 export async function PATCH(req) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const body = await req.json();
     const {
@@ -64,7 +71,7 @@ export async function PATCH(req) {
       adjustBy,
       lowStockThreshold,
       reason,
-      performedBy,
+      performedBy: performedBy || authResult.userId,
     });
 
     return NextResponse.json({ success: true, product: updated });

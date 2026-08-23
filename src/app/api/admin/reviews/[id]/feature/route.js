@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { toggleReviewFeatured } from "@/services/review.service";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
 // PATCH /api/admin/reviews/[id]/feature - Pin or unpin review
 export async function PATCH(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const resolvedParams = await params;
     const { id } = resolvedParams;

@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { getAllReviews } from "@/services/review.service";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
 // GET /api/admin/reviews - Paginated review list with filters
 export async function GET(req) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const { searchParams } = new URL(req.url);
 

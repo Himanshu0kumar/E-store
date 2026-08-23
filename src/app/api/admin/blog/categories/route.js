@@ -5,10 +5,14 @@ import {
   createBlogCategory,
 } from "@/services/blogCategory.service";
 import { seedInitialBlogData } from "@/services/blog.service";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
 // GET all blog categories for admin
-export async function GET() {
+export async function GET(req) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     await seedInitialBlogData();
     const categories = await getBlogCategories();
@@ -25,6 +29,9 @@ export async function GET() {
 // POST create blog category
 export async function POST(req) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const body = await req.json();
     const category = await createBlogCategory(body);

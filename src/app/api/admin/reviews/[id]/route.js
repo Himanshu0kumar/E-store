@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { deleteReview } from "@/services/review.service";
 import Review from "@/models/Review";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
 // GET /api/admin/reviews/[id] - Get review details
 export async function GET(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const resolvedParams = await params;
     const { id } = resolvedParams;
@@ -38,6 +42,9 @@ export async function GET(req, { params }) {
 // DELETE /api/admin/reviews/[id] - Delete review
 export async function DELETE(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const resolvedParams = await params;
     const { id } = resolvedParams;

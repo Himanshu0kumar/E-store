@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { bulkRestockProducts } from "@/services/inventory.service";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
 // POST bulk restock products
 export async function POST(req) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const body = await req.json();
     const { items, reason, performedBy } = body;
@@ -19,7 +23,7 @@ export async function POST(req) {
     const results = await bulkRestockProducts({
       items,
       reason,
-      performedBy,
+      performedBy: performedBy || authResult.userId,
     });
 
     return NextResponse.json({

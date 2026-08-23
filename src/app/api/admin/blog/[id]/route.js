@@ -5,10 +5,14 @@ import {
   updateBlogPost,
   deleteBlogPost,
 } from "@/services/blog.service";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
 // GET single blog post by ID
 export async function GET(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const resolvedParams = await params;
     const { id } = resolvedParams;
@@ -27,6 +31,9 @@ export async function GET(req, { params }) {
 // PUT update blog post by ID
 export async function PUT(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const resolvedParams = await params;
     const { id } = resolvedParams;
@@ -46,6 +53,9 @@ export async function PUT(req, { params }) {
 // DELETE blog post by ID
 export async function DELETE(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const resolvedParams = await params;
     const { id } = resolvedParams;

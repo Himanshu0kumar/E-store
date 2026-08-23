@@ -5,10 +5,14 @@ import {
   updateProduct,
   deleteProduct,
 } from "@/services/product.service";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
 // GET single product
 export async function GET(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
 
     const { id } = await params;
@@ -34,6 +38,9 @@ export async function GET(req, { params }) {
 // PUT update product
 export async function PUT(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
 
     const { id } = await params;
@@ -61,6 +68,9 @@ export async function PUT(req, { params }) {
 // DELETE product
 export async function DELETE(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
 
     const { id } = await params;

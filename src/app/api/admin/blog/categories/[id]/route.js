@@ -4,10 +4,14 @@ import {
   updateBlogCategory,
   deleteBlogCategory,
 } from "@/services/blogCategory.service";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
 // PUT update category
 export async function PUT(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const resolvedParams = await params;
     const { id } = resolvedParams;
@@ -27,6 +31,9 @@ export async function PUT(req, { params }) {
 // DELETE category
 export async function DELETE(req, { params }) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const resolvedParams = await params;
     const { id } = resolvedParams;

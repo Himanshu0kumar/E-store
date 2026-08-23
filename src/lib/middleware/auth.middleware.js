@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getPostLoginRedirect } from "@/lib/auth/redirects";
 
-// Protected routes requiring user login
+// Protected page routes requiring user login
 export const PROTECTED_PATHS = [
   "/wishlist",
   "/cart",
@@ -11,7 +11,7 @@ export const PROTECTED_PATHS = [
   "/orders",
 ];
 
-// Admin routes requiring admin role
+// Admin page routes requiring admin role
 export const ADMIN_PATHS = ["/admin", "/dashboard"];
 
 // Auth pages that authenticated users shouldn't re-visit
@@ -37,7 +37,33 @@ export function decodeJwtPayload(token) {
  */
 export function authMiddleware(req) {
   const { pathname } = req.nextUrl;
-  const accessToken = req.cookies.get("accessToken")?.value;
+
+  // Extract token from cookie or Authorization header
+  let accessToken = req.cookies.get("accessToken")?.value;
+  if (!accessToken) {
+    const authHeader = req.headers.get("authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      accessToken = authHeader.split(" ")[1];
+    }
+  }
+
+  // Early protection for /api/admin/* API endpoints
+  if (pathname.startsWith("/api/admin")) {
+    if (!accessToken) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Missing authentication token" },
+        { status: 401 }
+      );
+    }
+    const payload = decodeJwtPayload(accessToken);
+    if (!payload || payload.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Admin access required" },
+        { status: 403 }
+      );
+    }
+    return NextResponse.next();
+  }
 
   const isProtected = PROTECTED_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)

@@ -1,95 +1,4 @@
-// import { connectDB } from "@/lib/db";
-// import { getAuthUser } from "@/lib/auth/getAuthUser";
-// import {
-//   updateAddress,
-//   deleteAddress,
-// } from "@/services/auth.service";
-
-
-// export async function PUT(req) {
-//   try {
-//     await connectDB();
-
-//     const userId = await getAuthUser(req);
-//     if (!userId) {
-//       return Response.json(
-//         { success: false, error: "Unauthorized" },
-//         { status: 401 }
-//       );
-//     }
-
-//     const data = await req.json();
-//     const { addressId } = data;
-
-//     if (!addressId) {
-//       return Response.json(
-//         { success: false, error: "Address ID is required" },
-//         { status: 400 }
-//       );
-//     }
-
-//     const addresses = await updateAddress(userId, addressId, data);
-
-//     return Response.json(
-//       {
-//         success: true,
-//         data: addresses,
-//         message: "Address updated successfully",
-//       },
-//       { status: 200 }
-//     );
-//   } catch (error) {
-//     console.error("Update address error:", error);
-//     return Response.json(
-//       { success: false, error: error.message },
-//       { status: 400 }
-//     );
-//   }
-// }
-
-
-// export async function DELETE(req) {
-//   try {
-//     await connectDB();
-
-//     const userId = await getAuthUser(req);
-//     if (!userId) {
-//       return Response.json(
-//         { success: false, error: "Unauthorized" },
-//         { status: 401 }
-//       );
-//     }
-
-//     const { searchParams } = new URL(req.url);
-//     const addressId = searchParams.get("addressId");
-
-//     if (!addressId) {
-//       return Response.json(
-//         { success: false, error: "Address ID is required" },
-//         { status: 400 }
-//       );
-//     }
-
-//     const addresses = await deleteAddress(userId, addressId);
-
-//     return Response.json(
-//       {
-//         success: true,
-//         data: addresses,
-//         message: "Address deleted successfully",
-//       },
-//       { status: 200 }
-//     );
-//   } catch (error) {
-//     console.error("Delete address error:", error);
-//     return Response.json(
-//       { success: false, error: error.message },
-//       { status: 400 }
-//     );
-//   }
-// }
-
-
+import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth/getAuthUser";
 import { updateAddress, deleteAddress } from "@/services/auth.service";
@@ -101,7 +10,7 @@ export async function PUT(req, { params }) {
 
     const userId = await getAuthUser(req);
     if (!userId) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
@@ -109,7 +18,7 @@ export async function PUT(req, { params }) {
 
     const { addressId } = await params;
     if (!addressId) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, error: "Address ID is required" },
         { status: 400 }
       );
@@ -118,7 +27,7 @@ export async function PUT(req, { params }) {
     const data = await req.json();
     const addresses = await updateAddress(userId, addressId, data);
 
-    return Response.json(
+    return NextResponse.json(
       {
         success: true,
         data: addresses,
@@ -128,7 +37,7 @@ export async function PUT(req, { params }) {
     );
   } catch (error) {
     console.error("Update address error:", error);
-    return Response.json(
+    return NextResponse.json(
       { success: false, error: error.message },
       { status: 400 }
     );
@@ -142,7 +51,7 @@ export async function DELETE(req, { params }) {
 
     const userId = await getAuthUser(req);
     if (!userId) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
@@ -150,7 +59,7 @@ export async function DELETE(req, { params }) {
 
     const { addressId } = await params;
     if (!addressId) {
-      return Response.json(
+      return NextResponse.json(
         { success: false, error: "Address ID is required" },
         { status: 400 }
       );
@@ -158,7 +67,7 @@ export async function DELETE(req, { params }) {
 
     const addresses = await deleteAddress(userId, addressId);
 
-    return Response.json(
+    return NextResponse.json(
       {
         success: true,
         data: addresses,
@@ -168,7 +77,7 @@ export async function DELETE(req, { params }) {
     );
   } catch (error) {
     console.error("Delete address error:", error);
-    return Response.json(
+    return NextResponse.json(
       { success: false, error: error.message },
       { status: 400 }
     );

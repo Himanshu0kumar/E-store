@@ -4,6 +4,7 @@ import {
   getProductReviews,
   createReview,
 } from "@/services/review.service";
+import { getAuthUser } from "@/lib/auth/getAuthUser";
 
 // GET /api/products/[id]/reviews - Fetch approved product reviews with stats breakdown
 export async function GET(req, { params }) {
@@ -50,12 +51,20 @@ export async function GET(req, { params }) {
 export async function POST(req, { params }) {
   try {
     await connectDB();
+    const authenticatedUserId = await getAuthUser(req);
+    if (!authenticatedUserId) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Please log in to submit a review" },
+        { status: 401 }
+      );
+    }
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
     const body = await req.json();
 
-    const { userId, rating, title, comment } = body;
-    if (!userId || !rating || !comment) {
+    const { rating, title, comment } = body;
+    if (!rating || !comment) {
       return NextResponse.json(
         { success: false, error: "Rating (1-5) and comment are required" },
         { status: 400 }
@@ -64,7 +73,7 @@ export async function POST(req, { params }) {
 
     const review = await createReview({
       productId: id,
-      userId,
+      userId: authenticatedUserId,
       rating: Number(rating),
       title,
       comment,

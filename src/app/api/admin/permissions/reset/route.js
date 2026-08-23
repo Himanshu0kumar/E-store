@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { resetPermissionsToDefault } from "@/services/permission.service";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
 // POST /api/admin/permissions/reset - Reset role permissions to system defaults
 export async function POST(req) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const body = await req.json().catch(() => ({}));
     const { role } = body;

@@ -4,10 +4,14 @@ import {
   createProduct,
   getAllProducts,
 } from "@/services/product.service";
+import { requireAdmin } from "@/lib/auth/requireRole";
 
-// GET all products
-export async function GET() {
+// GET all products (Admin view)
+export async function GET(req) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const products = await getAllProducts();
     return NextResponse.json(products);
@@ -23,6 +27,9 @@ export async function GET() {
 // POST create product
 export async function POST(req) {
   try {
+    const authResult = await requireAdmin(req);
+    if (authResult instanceof NextResponse) return authResult;
+
     await connectDB();
     const body = await req.json();
     const product = await createProduct(body);
