@@ -12,7 +12,7 @@ import axios from "axios";
  *   are sent and received automatically by the browser.
  */
 const api = axios.create({
-  baseURL: "",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "",
   timeout: 15000, // 15-second timeout to avoid hanging requests
   withCredentials: true,
   headers: {
