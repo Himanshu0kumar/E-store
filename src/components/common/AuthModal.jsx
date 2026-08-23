@@ -252,7 +252,7 @@ export default function AuthModal() {
             </div>
 
             <p className="text-[11px] text-center text-slate-500 mt-6">
-              By continuing, you agree to ShopX's{" "}
+              By continuing, you agree to ShopX&apos;s{" "}
               <a href="/terms-and-conditions" className="text-emerald-400 hover:underline">
                 Terms
               </a>{" "}

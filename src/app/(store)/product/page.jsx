@@ -122,9 +122,7 @@ function ProductsContent() {
       const rating = typeof p.rating === "number" && p.rating > 0 ? p.rating : 4.5;
       const reviewCount = typeof p.reviewCount === "number" ? p.reviewCount : 12;
       const soldCount = typeof p.soldCount === "number" ? p.soldCount : 0;
-      const daysAgoAdded = p.createdAt
-        ? Math.floor((Date.now() - new Date(p.createdAt).getTime()) / (1000 * 60 * 60 * 24))
-        : 0;
+      const daysAgoAdded = 0;
 
       const image =
         p.image ||

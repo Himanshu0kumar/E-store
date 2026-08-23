@@ -90,6 +90,17 @@ export default function ProductDetailsView({ product, isAdmin = false }) {
     loadProductFeedback();
   }, [productId, currentUserId, dispatch]);
 
+  // Find if current user has an existing review
+  const myReview = useMemo(() => {
+    if (!currentUserId || !productReviews.length) return null;
+    return productReviews.find(
+      (r) =>
+        r.user === currentUserId ||
+        r.user?._id === currentUserId ||
+        r.userEmail === currentUser?.email
+    );
+  }, [productReviews, currentUserId, currentUser]);
+
   if (!product) return null;
 
   const avgRating =
@@ -104,17 +115,6 @@ export default function ProductDetailsView({ product, isAdmin = false }) {
     2: { count: 0, percent: 0 },
     1: { count: 0, percent: 0 },
   };
-
-  // Find if current user has an existing review
-  const myReview = useMemo(() => {
-    if (!currentUserId || !productReviews.length) return null;
-    return productReviews.find(
-      (r) =>
-        r.user === currentUserId ||
-        r.user?._id === currentUserId ||
-        r.userEmail === currentUser?.email
-    );
-  }, [productReviews, currentUserId, currentUser]);
 
   // Open modal to write a brand new review
   const handleOpenWriteModal = () => {

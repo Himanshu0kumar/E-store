@@ -62,7 +62,7 @@ export default function ContactPage() {
             Get in Touch
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
-            We'd love to hear from you
+            We&apos;d love to hear from you
           </h1>
           <p className="text-slate-500 mt-3 max-w-xl mx-auto">
             Questions about an order, a product, or anything else — our team
@@ -114,7 +114,7 @@ export default function ContactPage() {
                     Message sent
                   </h3>
                   <p className="text-slate-500 text-sm mb-6">
-                    Thanks for reaching out — we'll get back to you soon.
+                    Thanks for reaching out — we&apos;ll get back to you soon.
                   </p>
                   <button
                     onClick={() => setStatus("idle")}

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^44.3.0",
@@ -30,6 +32,8 @@
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "vite-jsconfig-paths": "^2.0.1",
+    "vitest": "^4.1.11"
   }
 }
